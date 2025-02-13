@@ -1,5 +1,13 @@
 # Identification of Morpheme Origin
 
+## Bachelor Thesis at Charles University
+
+**Author:** Aleš Manuel Papáček  
+**Institution:** Charles University, Faculty of Mathematics and Physics  
+**Program:** Computer Science with a specialization in Artificial Intelligence  
+**Thesis Supervisor:** Prof. Ing. Zdeněk Žabokrtský, Ph.D.  
+**Thesis Language:** English  
+
 ## Description
 Loanwords from foreign languages are a common way of expanding a language's vocabulary ([1]). These borrowings primarily occur at the word level ([2]), but when a significant amount of lexical material is adopted, some morphemes from borrowed words may become independent in the target language and be used productively. For example, the Greek-derived prefix "anti-" is frequently combined with native Czech roots. Another example is when affixes of the target language are attached to borrowed words, such as the Czech suffix "-ovat" for borrowed verbs or inflectional endings added to borrowed nouns and adjectives.
 
@@ -10,14 +18,6 @@ Morphemes within a single word may thus originate from different languages. The 
 * [2] Rejzek, Jiří. *Český etymologický slovník.* LEDA, 2001.
 * [3] Žabokrtský, Zdeněk, et al. *Towards universal segmentations: UniSegments 1.0.* Proceedings of the Thirteenth Language Resources and Evaluation Conference, 2022.
 
-## Field of Study
-Computer Science with a specialization in Artificial Intelligence
-
-## Thesis Supervisor
-Prof. Ing. Zdeněk Žabokrtský, Ph.D.
-
-## Thesis Language
-English
 
 ---
 
