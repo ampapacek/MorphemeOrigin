@@ -21,7 +21,7 @@ The output format will be:
         ...
 
 Usage example:
-    python make_anotable_indent.py --input anotations/ces_dev_sentences.tsv --output anotations/dev_for_annotation.tsv
+    python annotations/prepare_for_annotation.py --input annotations/archive/ces.sentence.dev.tsv --output annotations/dev_for_annotation.tsv
 """
 
 import argparse
@@ -41,14 +41,14 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '-i', "--input",
         type=str,
-        default="anotations/ces_dev_sentences.tsv",
-        help="Path to the input TSV file (default: anotations/ces_dev_sentences.tsv)"
+        default="annotations/ces.sentence.dev.tsv",
+        help="Path to the input TSV file (default: annotations/ces.sentence.dev.tsv)"
     )
     parser.add_argument(
         "-o", "--output",
         type=str,
-        default="anotations/dev_for_annotation.txt",
-        help="Path to the output file (default: anotations/dev_for_annotation.txt)"
+        default="annotations/dev_for_annotation.tsv",
+        help="Path to the output file (default: annotations/dev_for_annotation.tsv)"
     )
     parser.add_argument(
         "-v", "--verbose",
@@ -62,9 +62,10 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     return parser
 
-def process_annotations(input_file: str, output_file: str, verbose: bool = False, debug: bool = False) -> None:
+def prepare_annotation(input_file: str, output_file: str, verbose: bool = False, debug: bool = False) -> None:
     """
     Reads the annotation TSV file and writes an indented version to the output file.
+    With each morph on separate line.
     
     Indentation levels:
       - Level 0 (no indent): Sentence text.
@@ -78,7 +79,8 @@ def process_annotations(input_file: str, output_file: str, verbose: bool = False
       debug: If True, prints debugging messages.
     """
     INDENT = 4  # Number of spaces per indentation level.
-    
+    if verbose:
+        print(f"Starting transformating the data from {input_file}")
     with open(input_file, "r", encoding="utf-8") as infile, \
          open(output_file, "w", encoding="utf-8") as outfile:
         
@@ -138,23 +140,19 @@ def process_annotations(input_file: str, output_file: str, verbose: bool = False
             
             # Add a blank line after each sentence block.
             outfile.write("\n")
+    if verbose:
+        print(f"Finished transformating. The data for annotation are in file: {output_file}")
 
 def main():
     parser = setup_parser()
     args = parser.parse_args()
     if args.debug: args.verbose = True # Enable verbose output automaticaly if debug is enabled.
     
-    if args.verbose:
-        print(f"Processing annotations from '{args.input}'...")
-    
     try:
-        process_annotations(args.input, args.output, args.verbose, args.debug)
+        prepare_annotation(args.input, args.output, args.verbose, args.debug)
     except Exception as e:
         print(f"Error processing annotations: {e}")
         return
     
-    if args.verbose:
-        print(f"Annotations successfully written to '{args.output}'.")
-
 if __name__ == "__main__":
     main()
