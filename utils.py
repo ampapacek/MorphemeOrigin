@@ -252,7 +252,7 @@ def split(data: List, ratio: float = 0.2, random_seed:int = None) -> Tuple[List[
 
 def evaluate(sentences_prediction: List[DataSentence],
              sentences_target: List[DataSentence],
-             file_mistakes: str = None) -> float:
+             file_mistakes: str = None) -> tuple[float,float]:
     """
     Evaluates etymology predictions by computing the average F1 score for each morph.
     
