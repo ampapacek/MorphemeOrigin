@@ -1,0 +1,492 @@
+import sys
+import random
+from typing import List, Tuple, Optional
+from data_sentece import DataSentence,Word,Morph
+from collections import Counter, defaultdict
+def load_annotations(filepath: str, indent: int = 4) -> List[DataSentence]:
+    """
+    Reads an annotation file and returns a list of DataSentence objects.
+    
+    Expected file structure:
+    
+        <sentence text>
+            <word text>
+                <morph_text>\t<morph_type>\t<etymology_text>
+                ...
+            ...
+        (Blank lines separate sentences)
+    
+    The etymology and morph_type fields are optional (defaulting to [] and UNDEFINED, respectively).
+    Morph positions are deduced from the morph types:
+      - If exactly one morph is marked as ROOT, morphs before it are PREFIX and after it are SUFFIX.
+      - If multiple roots are present, morphs before the first root are PREFIX, morphs after the last root are SUFFIX,
+        and any morphs between roots are marked as INTERFIX.
+      - Otherwise, positions remain UNDEFINED.
+    """
+    sentences = []
+    current_sentence_header = None  # Holds the sentence text.
+    current_words = []              # List of words; each word is a list of Morph objects.
+    current_word:list["Morph"] = None             # The current word's list of Morph objects.
+
+    def flush_word():
+        nonlocal current_word, current_words
+        if current_word is not None:
+            # Deduce morph positions based on morph types.
+            root_indices = [i for i, m in enumerate(current_word) if m.morph_type == m.__class__.MorphType.ROOT]
+            # If no root found set the first morph's position as root (usually prepositions and conjuctions of just one morph)
+            if len(root_indices) == 0:
+                root_indices = [0]
+                # current_word[0].morph_type = Morph.MorphType.ROOT # optionaly change the morph type to root too
+            if len(root_indices) == 1:
+                root_index = root_indices[0]
+                for i, m in enumerate(current_word):
+                    if i < root_index:
+                        m.morph_position = m.__class__.MorphPosition.PREFIX
+                    elif i == root_index:
+                        m.morph_position = m.__class__.MorphPosition.ROOT
+                    else:
+                        m.morph_position = m.__class__.MorphPosition.SUFFIX
+            elif len(root_indices) > 1:
+                first_root = root_indices[0]
+                last_root = root_indices[-1]
+                for i in range(0, first_root):
+                    current_word[i].morph_position = current_word[i].__class__.MorphPosition.PREFIX
+                for i in root_indices:
+                    current_word[i].morph_position = current_word[i].__class__.MorphPosition.ROOT
+                for i in range(first_root + 1, last_root):
+                    if i not in root_indices:
+                        current_word[i].morph_position = current_word[i].__class__.MorphPosition.INTERFIX
+                for i in range(last_root + 1, len(current_word)):
+                    current_word[i].morph_position = current_word[i].__class__.MorphPosition.SUFFIX
+            elif len(root_indices) == 0:
+                #no root - some mistake
+                current_word_str = ""
+                for morph in current_word: current_word_str += morph.text
+                raise Exception ("No root found in word: ", current_word_str)
+                # print ("\t".join(map(str,current_word)))
+                # input()
+
+            # Append the processed word and reset.
+            current_words.append(current_word)
+            current_word = None
+
+    def flush_sentence():
+        nonlocal current_sentence_header, current_words, current_word, sentences
+        if current_sentence_header is not None:
+            flush_word()  # Flush any remaining word.
+            sentence_obj = DataSentence(words=[Word(morphs=w) for w in current_words])
+            sentences.append(sentence_obj)
+            current_sentence_header = None
+            current_words = []
+
+    with open(filepath, encoding="utf-8") as file:
+        for line in file:
+            line = line.rstrip("\n")
+            if not line.strip():
+                flush_sentence()
+                continue
+            if line.startswith('#'): # comments in annotation file
+                continue
+            stripped_line = line.lstrip()
+            # Sentence line: no indentation.
+            if not line.startswith(" "):
+                flush_sentence()  # Finalize previous sentence.
+                current_sentence_header = stripped_line
+            # Word line: exactly indent spaces (e.g., 4 spaces) but not 8.
+            elif line.startswith(" " * indent) and not line.startswith(" " * (2 * indent)):
+                flush_word()  # Finalize the current word.
+                current_word = []  # Start a new word.
+            # Morph line: indent 2*indent spaces.
+            elif line.startswith(" " * (2 * indent)):
+                parts = stripped_line.split("\t")
+                morph_text = parts[0] if len(parts) >= 1 else ""
+                if len(parts) >= 3:
+                    morph_type_field = parts[1].strip()
+                    morph_type = Morph.MorphType(morph_type_field)
+                    etymology_field = parts[2].strip()
+                    morph_etymology = [code.strip() for code in etymology_field.split(',')] if etymology_field else []
+                elif len(parts) == 2 and parts[1].strip():
+                    etymology_field = parts[1].strip()
+                    morph_etymology = [code.strip() for code in etymology_field.split(',')] if etymology_field else []
+                    morph_type = Morph.MorphType.UNDEFINED
+                else:
+                    morph_etymology = []
+                    morph_type = Morph.MorphType.UNDEFINED
+
+                if current_word is None:
+                    current_word = []
+                current_word.append(Morph(morph_text, morph_etymology, morph_type))
+            else:
+                # Ignore any lines with unexpected indentation.
+                pass
+
+    flush_sentence()  # Final flush if file doesn't end with a blank line.
+    return sentences
+
+def fill_classification(filepath: str, sentences: List[DataSentence]) ->List[DataSentence]:
+    """
+    Loads word classification from a file and fills in the classification for each morph.
+    Returns the input sentences with the classification filled in for each morph.
+    
+    The file is expected to have lines in the following format:
+    
+        segmented_word[TAB]code1 code2 ... codeN
+    
+    For example:
+        Tř i krát    R D D
+        rychl ejš í  R D I
+        než         R
+        slov o      R I
+    
+    The segmented_word is the word split into its morph segments by spaces. The classification
+    codes (e.g., R, D, I) correspond one-to-one with the morphs of the word.
+    
+    Args:
+        filepath (str): Path to the classification file.
+        sentences (List[DataSentence]): List of sentences containing Word and Morph objects.
+    
+    Returns:
+        List[DataSentence]: The input sentences with the classification filled in for each morph.
+    Raises:
+        ValueError: If there is any mismatch between the file and the sentence data.
+    """
+    # Mapping from classification code letter to MorphType enum.
+    code_to_morph_type = {
+        "R": Morph.MorphType.ROOT,
+        "D": Morph.MorphType.DERIVATIONAL_AFFIX,
+        "I": Morph.MorphType.INFLECTIONAL_AFFIX,
+        "U": Morph.MorphType.UNDEFINED,
+    }
+       
+    # Read all non-empty lines from the file.
+    with open(filepath, 'rt', encoding='utf-8') as f:
+        lines = [line.strip() for line in f if line.strip()]
+    
+    # Collect all non-punctuation words from the sentences.
+    words_from_sentences:List[Word] = []
+    for sentence in sentences:
+        for word in sentence.words:
+            if word.text.isalnum():
+                words_from_sentences.append(word)
+
+    # Process each line and fill in the classification.
+    for line, word in zip(lines, words_from_sentences):
+        # Split line into the segmented word and the classification codes.
+        parts = line.split("\t")
+        if len(parts) < 2:
+            raise ValueError(f"Line '{line}' is not in the expected format (segmented word[TAB]codes).")
+        segmented_word = parts[0].strip()
+        codes_str = parts[1].strip()
+        
+        # Reconstruct the word from the segmented form (by removing spaces).
+        reconstructed_word = segmented_word.replace(" ", "")
+        
+        # Check that the reconstructed word matches the word's text.
+        if reconstructed_word != word.text:
+            raise ValueError(f"Word mismatch: classification file word '{reconstructed_word}' does not match "
+                             f"sentence word '{word.text}'.")
+        
+        # Get the classification for each morph
+        codes = codes_str.split()
+        
+        # Check that the number of codes equals the number of morphs in the word.
+        if len(codes) != len(word.morphs):
+            raise ValueError(f"Number of classification codes ({len(codes)}) does not match number of morphs "
+                             f"({len(word.morphs)}) for word '{word.text}'.")
+        
+        # Assign the classification (morph type) to each morph.
+        for morph, code in zip(word.morphs, codes):
+            if code not in code_to_morph_type:
+                raise ValueError(f"Unknown classification code '{code}' for word '{word.text}'.")
+            morph.morph_type = code_to_morph_type[code]
+    return sentences
+
+def statistics(target_sentences: List[DataSentence], languages_file: str, morphs_file: str) -> tuple[int,int,int]:
+    """Writes two files with stats and returns number of moprhs, words and sentences."""
+
+    morph_count = 0
+    morphs = defaultdict(Counter)
+    languages = Counter()
+    sentences_count = len(target_sentences)
+    word_count = 0
+    for sentence in target_sentences:
+        for word in sentence.words:
+            if not word.text.isalpha() and len(word.morphs) == 1:
+                continue
+            word_count += 1
+            for morph in word:
+                # Consider only morphs with non-empty text and etymology.
+                if morph.text and morph.etymology:
+                    morph_count += 1
+                    etym = ",".join(morph.etymology)
+                    morphs[morph.text][etym] += 1
+                    languages[etym] += 1
+    if languages_file != None:
+        with open(languages_file, 'wt') as lang_f:
+            for language, count in languages.most_common():
+                print(f"{language}\t{count}", file=lang_f)
+    if morphs_file != None:
+        with open(morphs_file, 'wt') as morphs_f:
+            lines = []
+            for morph_text, etymology_counter in sorted(morphs.items(), key=lambda item: sum(item[1].values()), reverse=True):
+                if len(etymology_counter) > 1:
+                    print(f"{morph_text}\t{dict(etymology_counter)}", file=morphs_f)
+                else:
+                    lines.append(f"{morph_text}\t{dict(etymology_counter)}")
+            for line in lines:
+                print(line,file=morphs_f)
+
+    return morph_count,word_count,sentences_count
+
+def split(data: List, ratio: float = 0.2, random_seed:int = None) -> Tuple[List[DataSentence], List[DataSentence]]:
+    """
+    Splits the input data into two random parts based on the provided ratio.
+    
+    The second part contains approximately the given ratio of the total items.
+    """
+    data_copy = data.copy()
+    random.seed(random_seed)
+    random.shuffle(data_copy)
+    split_index = int(len(data_copy) * (1 - ratio))
+    return data_copy[:split_index], data_copy[split_index:]
+
+def evaluate(sentences_prediction: List[DataSentence],
+             sentences_target: List[DataSentence],
+             file_mistakes: str = None) -> float:
+    """
+    Evaluates etymology predictions by computing the average F1 score for each morph.
+    
+    For each morph, the etymology lists are converted to sets. Precision, recall,
+    and F1 are computed based on the intersection of these sets.
+    
+    The function asserts that the computed sentence strings and morph texts match 
+    between predictions and targets.
+    
+    Optionally, if a file path is provided, it writes mistakes (where the prediction 
+    is not fully correct) to that file. The output file has a header and contains 
+    the word text, morph text, predicted etymology, and target etymology.
+    
+    Args:
+        sentences_prediction (List[DataSentence]): List of predicted sentences.
+        sentences_target (List[DataSentence]): List of target sentences.
+        file_mistakes (str, optional): Path to a file where mistakes will be logged.
+                                       If None, no mistakes are logged.
+    
+    Returns:
+        float: The average F1 score over all evaluated morphs.
+    """
+    total_f1 = 0.0  # Sum of F1 scores for each morph.
+    morph_count = 0  # Total number of evaluated morphs.
+    mistakes_count = 0  # Total number of incorrect words
+
+    # Open the mistakes file if a path is provided.
+    mistakes_f = open(file_mistakes, 'wt') if file_mistakes else None
+    if mistakes_f:
+        print("word\tmorph\tprediction\ttarget", file=mistakes_f)
+    
+    # Iterate over corresponding predicted and target sentences.
+    for sentence_pred, sentence_tgt in zip(sentences_prediction, sentences_target):
+        # Ensure the computed sentence strings match.
+        assert sentence_pred.sentence == sentence_tgt.sentence, \
+            f"Sentence mismatch: {sentence_pred.sentence} != {sentence_tgt.sentence}"
+        
+        # Iterate over corresponding words.
+        for word_pred, word_tgt in zip(sentence_pred.words, sentence_tgt.words):
+            # Iterate over corresponding morphs.
+            for morph_pred, morph_tgt in zip(word_pred, word_tgt):
+                # Ensure that the morph texts match.
+                assert morph_pred.text == morph_tgt.text, \
+                    f"Morph text mismatch: {morph_pred.text} != {morph_tgt.text}"
+                
+                # Convert etymology lists to sets for evaluation.
+                pred_set = set(morph_pred.etymology)
+                tgt_set = set(morph_tgt.etymology)
+                
+                # Skip evaluation for morphs with empty etymology (e.g., punctuation or numbers).
+                if not pred_set and not tgt_set:
+                    continue
+                    # optionally could treat this as correct prediction, i.e. insted of continue use f1 = 1
+
+                if not tgt_set:
+                    # Skip evaluation if the target etymology is empty. (e.g., punctuation or numbers or abbrevations)
+                    # optionally could be considered as a mistake that the model didnt predict [] # empty etymology
+                    continue
+                else:
+                    # Compute intersection and calculate precision, recall, and F1.
+                    intersection = pred_set.intersection(tgt_set)
+                    precision = len(intersection) / len(pred_set) if pred_set else 0
+                    recall = len(intersection) / len(tgt_set) if tgt_set else 0
+                    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+                    
+                    # If the prediction is not fully correct, log the mistake.
+                    if f1 != 1:
+                        mistakes_count += 1
+                        if mistakes_f is not None:
+                            print(f"{word_tgt.text}\t{morph_tgt.text}\t{morph_pred.etymology}\t{morph_tgt.etymology}",
+                              file=mistakes_f)
+                
+                total_f1 += f1
+                morph_count += 1
+    
+    # Close the mistakes file if it was opened.
+    if mistakes_f is not None:
+        mistakes_f.close()
+    
+    f_score_percentage = 100 * total_f1 / morph_count if morph_count > 0 else 0.0
+    percentage_correct = 100 * (morph_count - mistakes_count) / morph_count if morph_count > 0 else 0.0
+
+    return f_score_percentage, percentage_correct
+
+def relative_error_reduction(baseline_f1: float, new_f1: float) -> float:
+    """
+    Calculate the relative error reduction improvement metric on a 0–100 scale.
+    
+    The error is defined as (100 - F1). The improvement metric is the percentage
+    reduction of errors relative to the baseline:
+    
+        improvement = 100 * (baseline_error - new_error) / baseline_error
+                    = 100 * ((100 - baseline_f1) - (100 - new_f1)) / (100 - baseline_f1)
+                    = 100 * (new_f1 - baseline_f1) / (100 - baseline_f1)
+    
+    Args:
+        baseline_f1 (float): The baseline F1 score (in percentage).
+        new_f1 (float): The new F1 score (in percentage).
+        
+    Returns:
+        float: The improvement metric, where 0 means no improvement over baseline and 
+               100 means perfect prediction (i.e. baseline errors completely eliminated).
+               
+    Raises:
+        ValueError: If either F1 score is outside the range [0, 100] or if baseline_f1 is 100.
+    """
+    if not (0 <= baseline_f1 <= 100) or not (0 <= new_f1 <= 100):
+        raise ValueError("F1 scores must be between 0 and 100.")
+    
+    if baseline_f1 == 100:
+        raise ValueError("Baseline F1 cannot be 100, as improvement metric is undefined.")
+    
+    improvement = 100 * (new_f1 - baseline_f1) / (100 - baseline_f1)
+    return improvement
+
+def remove_targets(sentences: List[DataSentence]) -> List[DataSentence]:
+    """
+    Removes etymology targets by creating a deep copy of the sentences
+    and setting each morph's etymology to an empty list.
+    """
+    sentences_deep_copy = list(map(DataSentence.from_data_sentence, sentences))
+    for sentence in sentences_deep_copy:
+        for morph in sentence:
+            morph.etymology = []
+    return sentences_deep_copy
+
+def pprint_sentences(sentences: List[DataSentence], filename: Optional[str] = None, indent: int = 4) -> None:
+    """
+    Writes the sentences in a nicely indented format, with each morph on a separate line.
+    
+    If a filename is provided, the output is written to that file; otherwise, it is printed to the console.
+    
+    The output structure is:
+      <sentence text>
+          <word text>
+              <morph text>    <morph type>    <comma-separated etymology>
+          <word text>
+              ...
+    
+    Args:
+      sentences: A list of DataSentence objects.
+      filename: The output file path. If None, the output is printed to the console.
+      indent: Number of spaces per indentation level (default is 4).
+    """
+    # Determine output stream: file or stdout.
+    if filename:
+        out_stream = open(filename, "wt", encoding="utf-8")
+        close_stream = True
+    else:
+        out_stream = sys.stdout
+        close_stream = False
+
+    try:
+        for sentence in sentences:
+            out_stream.write(sentence.sentence + "\n")
+            for word in sentence.words:
+                # Only print words that are alphanumeric.
+                if word.text.isalnum():
+                    out_stream.write(" " * indent + word.text + "\n")
+                    for morph in word.morphs:
+                        # Write each morph with an indent level of 2.
+                        out_stream.write(" " * (indent * 2) + morph.text +
+                                         "\t" + str(morph.morph_type) +
+                                         "\t" + ",".join(morph.etymology) + "\n")
+            out_stream.write("\n")
+    finally:
+        if close_stream:
+            out_stream.close()
+
+
+def calculate_cohen_kappa(sentences1: List[DataSentence], sentences2: List[DataSentence]) -> float:
+    """
+    Computes Cohen's kappa for inter-annotator agreement on etymology annotations.
+    
+    For each morph in corresponding DataSentence objects, the etymology (a list of strings)
+    is converted to a sorted tuple to represent a categorical label. The function then 
+    computes the observed agreement (proportion of morphs for which the labels agree) and 
+    the expected agreement (based on the marginal label distributions), and returns the kappa value.
+    
+    Args:
+        sentences1 (List[DataSentence]): Annotated sentences from annotator 1.
+        sentences2 (List[DataSentence]): Annotated sentences from annotator 2.
+    
+    Returns:
+        float: The Cohen's kappa value.
+    
+    Raises:
+        AssertionError: If corresponding sentences, words, or morph texts do not align.
+    """
+    labels1 = []
+    labels2 = []
+    
+    # Iterate over aligned sentences.
+    for s1, s2 in zip(sentences1, sentences2):
+        # Ensure sentences match.
+        assert s1.sentence == s2.sentence, f"Sentence mismatch: {s1.sentence} != {s2.sentence}"
+        for w1, w2 in zip(s1.words, s2.words):
+            assert w1.text == w2.text, f"Word mismatch: {w1.text} != {w2.text}"
+            for m1, m2 in zip(w1.morphs, w2.morphs):
+                # Check that the morph texts match.
+                assert m1.text == m2.text, f"Morph text mismatch: {m1.text} != {m2.text}"
+                # Convert the etymology lists to sorted tuples (empty tuple for no etymology).
+                label1 = tuple(sorted(m1.etymology))
+                label2 = tuple(sorted(m2.etymology))
+                labels1.append(label1)
+                labels2.append(label2)
+    
+    if not labels1:
+        # If no morphs were evaluated, return perfect agreement.
+        return 1.0
+
+    total = len(labels1)
+    # Observed agreement: proportion of morphs with identical labels.
+    observed_agreement = sum(1 for a, b in zip(labels1, labels2) if a == b) / total
+
+    # Compute marginal frequencies for annotator 1 and annotator 2.
+    freq1 = {}
+    freq2 = {}
+    for label in labels1:
+        freq1[label] = freq1.get(label, 0) + 1
+    for label in labels2:
+        freq2[label] = freq2.get(label, 0) + 1
+
+    # Expected agreement: sum over all labels of the product of marginal probabilities.
+    expected_agreement = 0.0
+    all_labels = set(freq1.keys()) | set(freq2.keys())
+    for label in all_labels:
+        p1 = freq1.get(label, 0) / total
+        p2 = freq2.get(label, 0) / total
+        expected_agreement += p1 * p2
+
+    if expected_agreement == 1:
+        return 1.0  # Avoid division by zero 
+
+    kappa = (observed_agreement - expected_agreement) / (1 - expected_agreement)
+    return kappa
+
