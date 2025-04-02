@@ -2,7 +2,6 @@ from collections import defaultdict, Counter
 from typing import List
 from data_sentece import DataSentence,Word,Morph
 from model import Model
-import sys
 import requests
 import copy
 
@@ -84,67 +83,132 @@ class MostFrequentOriginModel(Model):
             predictions.append(sent_copy)
         return predictions
 
-class RuleBasedEtymologyModel(Model):
+def load_etym_dict(filepath: str) -> dict[str, list[str]]:
+    """
+    Loads a dictionary mapping words/entries to their etymological information.
+    The file is expected to have lines in the format:
+    
+        <entry>\t<comma_separated_list_of_languages>
+    
+    Blank lines and lines not conforming to this format are skipped.
+    """
+    etymology = {}
+    with open(filepath, "rt", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split("\t")
+            if len(parts) == 2:
+                entry = parts[0].strip()
+                langs_str = parts[1].strip()
+                langs = [lang.strip() for lang in langs_str.split(",") if lang.strip()]
+                etymology[entry] = langs
+    return etymology
+
+def load_affixes(afixes_file: str) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+    """
+    Loads affix dictionaries for prefixes and suffixes from a file.
+    Each line is expected to be in the format:
+      affix<TAB>language1,language2,...
+    If the affix starts with '-', it is considered a suffix.
+    If the affix ends with '-', it is considered a prefix.
+    """
+    prefixes = {}
+    suffixes = {}
+    with open(afixes_file, "rt", encoding="utf-8") as aff_file:
+        for line in aff_file:
+            parts = line.strip().split("\t")
+            if len(parts) != 2:
+                continue
+            affix, etyms = parts
+            langs = [lang.strip() for lang in etyms.split(",") if lang.strip()]
+            if affix.startswith("-"):
+                # suffix
+                suffixes[affix[1:].lower()] = langs
+            elif affix.endswith("-"):
+                # prefix
+                prefixes[affix[:-1].lower()] = langs
+            else:
+                pass  # ignore any that don't match prefix/suffix pattern
+    return prefixes, suffixes
+
+def get_affix_etymology(morph_text: str, position:Morph.MorphPosition, prefixes: dict[str, list[str]], suffixes: dict[str, list[str]]) -> list[str]:
+    """
+    Returns the etymology for a prefix/suffix morph if found in the dictionaries.
+    Otherwise returns an empty list. The logic is now based on morph_position:
+      - If morph_position is 'PREFIX', we look it up in prefixes.
+      - If morph_position is 'SUFFIX', we look it up in suffixes.
+    """
+    morph_lc = morph_text.lower()
+    if position.name == "PREFIX":
+        return prefixes.get(morph_lc, [])
+    elif position.name == "SUFFIX":
+        return suffixes.get(morph_lc, [])
+    return []
+
+class MorphDictModel(Model):
     """
     A rule-based model that assigns etymology based on root and affix dictionaries.
     
     For each alphabetic morph:
-      - If the morph is a root (and longer than 2 characters) and is found in the root etymology dictionary,
-        its etymology is assigned accordingly.
-      - If it is a derivational affix, the model attempts to assign its etymology using the affix dictionaries.
-      - Otherwise, it defaults to ["ces"].
+      - If the morph is a root (longer than 2 chars) found in the root dictionary,
+        assign that root's etymology.
+      - If it's a derivational affix, we check prefix/suffix dictionaries 
+        based on morph.morph_position.
+      - Otherwise, default to ["ces"].
     """
-    def __init__(self, root_etym_file: str, affixes_file: str, name: str = "RuleBasedEtymologyModel") -> None:
+    def __init__(self, root_etym_file: str, affixes_file: str, name: str = "MorphDictModel") -> None:
         super().__init__(name)
         self.roots_etymology = load_etym_dict(root_etym_file)
         self.prefixes, self.suffixes = load_affixes(affixes_file)
 
-    def fit(self, data: List["DataSentence"]) -> None:
-        """Does nothing."""
-        # No training is necessary.
+    def fit(self, data: List[DataSentence]) -> None:
+        """No training needed for this rule-based approach."""
         pass
 
-    def predict(self, data: List["DataSentence"]) -> List["DataSentence"]:
+    def predict(self, data: List[DataSentence]) -> List[DataSentence]:
         predictions = copy.deepcopy(data)
         for sentence in predictions:
             for word in sentence.words:
                 for morph in word.morphs:
                     if morph.text.isalpha():
-                        if (morph.morph_type == morph.__class__.MorphType.ROOT and
-                            len(morph.text) > 2 and 
-                            (morph.text in self.roots_etymology or morph.text.lower() in self.roots_etymology)):
+                        if (morph.morph_type == morph.__class__.MorphType.ROOT
+                            and len(morph.text) > 2
+                            and (morph.text in self.roots_etymology or morph.text.lower() in self.roots_etymology)):
                             key = morph.text if morph.text in self.roots_etymology else morph.text.lower()
                             morph.etymology = self.roots_etymology[key]
                         elif morph.morph_type == morph.__class__.MorphType.DERIVATIONAL_AFFIX:
-                            affix_etym = get_affix_etymology(morph.text, word.text, self.prefixes, self.suffixes)
-                            morph.etymology = affix_etym if affix_etym else ["ces"]
+                            # Use position-based lookup in prefix/suffix dictionaries.
+                            affix_etyms = get_affix_etymology(morph.text, morph.morph_position, self.prefixes, self.suffixes)
+                            morph.etymology = affix_etyms if affix_etyms else ["ces"]
                         else:
                             morph.etymology = ["ces"]
         return predictions
 
-
-class WordBasedEtymologyModel(Model):
+class WordDictModel(Model):
     """
-    A word-based model that assigns etymology using a word-level etymology dictionary.
+    A word-based model that assigns etymology using a word-level dictionary.
     
-    The model uses the MorphoDiTa API to obtain lemmata for the full text,
-    then for each word it looks up etymology in the word-level dictionary.
-    For derivational affixes, it falls back to affix analysis.
+    The model uses the MorphoDiTa API to obtain lemmata for the entire text,
+    then for each word it looks up etymology in a word-level dictionary.
+    For derivational affixes, we rely on the prefix/suffix dictionaries 
+    (using morph_position).
+    If no dictionary entry is found, defaults to ["ces"].
     """
-    def __init__(self, word_etym_file: str, affixes_file: str, name: str = "WordBasedEtymologyModel") -> None:
+    def __init__(self, word_etym_file: str, affixes_file: str, name: str = "WordDictModel") -> None:
         super().__init__(name)
         self.words_etymology = load_etym_dict(word_etym_file)
         self.prefixes, self.suffixes = load_affixes(affixes_file)
 
-
-    def fit(self, data: List["DataSentence"]) -> None:
-        # In this simple model, fit does nothing.
+    def fit(self, data: List[DataSentence]) -> None:
+        """No training necessary for this word-level dictionary model."""
         pass
 
     @staticmethod
     def get_lemmata(text: str) -> List[str]:
         """
-        Retrieves lemmata for the given text using the MorphoDiTa API.
+        Retrieves lemmata for the given text using the MorphoDiTa HTTP API.
         """
         url = "http://lindat.mff.cuni.cz/services/morphodita/api/analyze"
         params = {
@@ -158,234 +222,48 @@ class WordBasedEtymologyModel(Model):
         json_data = response.json()
         sentences = json_data.get("result", [])
         lexemes = []
-        for sentence in sentences:
-            for token in sentence:
+        for sent in sentences:
+            for token in sent:
                 analyses = token.get("analyses", [])
                 if analyses:
-                    lexeme = analyses[0].get("lemma", token.get("token", ""))
+                    lemma = analyses[0].get("lemma", token.get("token", ""))
                 else:
-                    lexeme = token.get("token", "")
-                lexemes.append(lexeme)
+                    lemma = token.get("token", "")
+                lexemes.append(lemma)
         return lexemes
 
-    def predict(self, data: List["DataSentence"]) -> List["DataSentence"]:
+    def predict(self, data: List[DataSentence]) -> List[DataSentence]:
         predictions = copy.deepcopy(data)
-        # Build the full text from sentences.
+        
+        # Build the full text from all sentences.
         whole_text = " ".join(sentence.sentence for sentence in predictions)
-        lemmata = WordBasedEtymologyModel.get_lemmata(whole_text)
-        # Collect all words from the sentences.
-        all_words = []
+        lemmata = self.get_lemmata(whole_text)
+        
+        # Collect all words in the same order.
+        all_words:list[Word] = []
         for sentence in predictions:
             all_words.extend(sentence.words)
         
         if len(lemmata) != len(all_words):
-            raise Exception(f"Length mismatch: {len(lemmata)} lemmata vs {len(all_words)} words.")
+            raise ValueError(f"Mismatch: {len(lemmata)} lemmata vs {len(all_words)} words.")
         
-        # For each word, attempt to assign etymology based on the word-level dictionary.
-        for word, lemma in zip(all_words, lemmata):
-            word_etym = self.words_etymology.get(word.text, [])
+        for word_obj, lemma in zip(all_words, lemmata):
+            # Look up word-level etymology from dictionary. 
+            word_etym = self.words_etymology.get(word_obj.text, [])
             if not word_etym:
+                # If not found by surface form, try the lemma.
                 word_etym = self.words_etymology.get(lemma, [])
-            for morph in word:
+            
+            for morph in word_obj.morphs:
                 if morph.text.isalpha():
+                    # Assign the found etymology to root
                     if morph.morph_type == morph.__class__.MorphType.ROOT:
                         morph.etymology = word_etym if word_etym else ["ces"]
+                        # Look up the etymology for derivational affixes
                     elif morph.morph_type == morph.__class__.MorphType.DERIVATIONAL_AFFIX:
-                        affix_etym = get_affix_etymology(morph.text, word.text, self.prefixes, self.suffixes)
-                        morph.etymology = affix_etym if affix_etym else ["ces"]
+                        affix_etyms = get_affix_etymology(morph.text, morph.morph_position,
+                                                          self.prefixes, self.suffixes)
+                        morph.etymology = affix_etyms if affix_etyms else ["ces"]
                     else:
                         morph.etymology = ["ces"]
         return predictions
-
-def load_etym_dict(filepath:str) -> dict[str,list[str]]:
-    etymology = {}
-    with open(filepath, 'rt', encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue  # Skip blank lines.
-            parts = line.split('\t')
-            if len(parts) == 2:
-                entry = parts[0].strip()
-                languages_str = parts[1].strip()
-                # Split the languages string by comma and strip each language.
-                languages = [lang.strip() for lang in languages_str.split(',') if lang.strip()]
-                etymology[entry] = languages
-            else:
-                continue # skip lines that are not in the right format
-    return etymology
-
-def get_affix_etymology(morph:str, word:str, prefixes:dict[str,list[str]], suffixes:dict[str,list[str]]) -> str:
-    """Returns the etymology for the morph if it is affix and the information is in the dictionary. Empty string otherwise"""
-    # naive simple clasification not too acurate, but in prefixes and affixes dictionaries are just the affixes which usually cannot be roots or other affixes
-    morph = morph.lower() # lowercase the morph
-    if word.startswith(morph):
-        # prefix
-        if morph in prefixes:
-            return prefixes[morph] 
-    elif word.endswith(morph) or (not word.startswith(morph) and len(morph) < 3):
-        # suffix
-        if morph in suffixes:
-            # print(f"Suffix found!!!, In word {word}, suffix -{morph} with etymology {suffixes[morph]}")
-            return suffixes[morph]
-    return "" # if morph is not suffix nor prefix or is not in the dictionaries fall back on empty string
-
-def load_affixes(afixes_file:str = 'affixes.tsv') -> tuple[dict[str,list[str]],dict[str,list[str]]]:
-    prefixes = {}
-    suffixes = {}
-    with open(afixes_file, 'rt') as affixes:
-        for line in affixes:
-            if len(line.split('\t')) != 2: continue
-            affix, etymology = line.split('\t')
-            if affix.startswith('-'):
-                suffixes[affix[1:]] = etymology.strip().split(',')
-            elif affix.endswith('-'):
-                prefixes[affix[:-1]] = etymology.strip().split(',')
-            else:
-                pass # ignore everything else
-    return prefixes,suffixes
-
-
-
-
-
-
-# These methods (below) are not used anywhere
-
-def dummy_predict_deprecated(sentences: List[DataSentence]) -> List[DataSentence]:
-    """
-    A dummy prediction function that sets the etymology to ["ces"]
-    for each morph whose text is alphabetic.
-    """
-    for sentence in sentences:
-        for word in sentence.words:
-            for morph in word:
-                if morph.text.isalpha():
-                    morph.etymology = ["ces"]
-    return sentences
-
-
-def rule_predict_deprecated(sentences: List[DataSentence], roots_etymology:dict[str,list[str]], prefixes:dict[str,list[str]], suffixes:dict[str,list[str]]) -> List[DataSentence]:
-    """
-    Prediction function that looks at roots and affixes and sets etymology for them if in dictionary,
-    sets the etymology of rest to ["ces"] for each morph whose text is alphabetic (rest keep without etymology).
-    """
-    
-    for sentence in sentences:
-        for word in sentence.words:
-            for morph in word:
-                if morph.text.isalpha():
-                    if morph.morph_type == Morph.MorphType.ROOT and len(morph.text) > 2 and (morph.text in roots_etymology or morph.text.lower() in roots_etymology):
-                        if morph.text in roots_etymology:
-                            morph.etymology = roots_etymology[morph.text]
-                        else:
-                            morph.etymology = roots_etymology[morph.text.lower()]
-                    elif morph.morph_type == Morph.MorphType.DERIVATIONAL_AFFIX:
-                        affix_etymology = get_affix_etymology(morph.text, word.text, prefixes, suffixes) # returns the etymology or ""
-                        if affix_etymology:
-                            morph.etymology = affix_etymology
-                        else:
-                            morph.etymology = ["ces"]
-                    else:
-                        # Inflectional affix or undefined
-                        morph.etymology = ["ces"]
-                else:
-                    pass # keep blank etymology for punctuation, numbers etc.
-    return sentences
-
-
-def get_lemmata_deprecated(text: str) -> List[str]:
-    """
-    Retrieves the lexemes (lemmas) for the input text using the MorphoDiTa API.
-    
-    This method sends the input text to the MorphoDiTa 'analyze' endpoint with JSON output.
-    The API returns a JSON array of sentences, where each sentence is an array of tokens.
-    Each token is an object that contains the original token, and an 'analyses' field
-    (a list of analyses). We take the lemma from the first analysis for each token.
-    
-    Args:
-        text (str): Input text.
-        
-    Returns:
-        List[str]: A list of lemmas corresponding to each token in the input.
-                  For example, from "going" it would return ["go"].
-    
-    Raises:
-        requests.HTTPError: If the API request fails.
-    """
-    url = "http://lindat.mff.cuni.cz/services/morphodita/api/analyze"
-    
-    # Parameters for the API call.
-    params = {
-        "data": text,
-        "output": "json",
-
-        "guesser": "yes",
-        "convert_tagset": "strip_lemma_comment",
-        # "derivation": "root"
-    }
-    
-    # Send GET request to the MorphoDiTa API.
-    response = requests.get(url, params=params)
-    response.raise_for_status()  # Raises an error if the request failed.
-    
-    # Parse the JSON response.
-    json_data = response.json()
-    sentences = json_data.get("result", [])
-    
-    lexemes = []
-    # Iterate over each sentence and token to extract lemmas.
-    for sentence in sentences:
-        for token in sentence:
-            analyses = token.get("analyses", [])
-            # Use the lemma from the first analysis if available;
-            # otherwise, default to the token form.
-            if analyses:
-                lexeme = analyses[0].get("lemma", token.get("token", ""))
-            else:
-                lexeme = token.get("token", "")
-            lexemes.append(lexeme)
-    
-    return lexemes
-
-def word_predict_deprecated(sentences: List[DataSentence], words_etymology:dict[str,list[str]], prefixes:dict[str,list[str]], suffixes:dict[str,list[str]]) -> List[DataSentence]:
-    """
-    Prediction function that looks at etymology of given wordroots and affixes and sets etymology for them if in dictionary,
-    sets the etymology of rest to ["ces"] for each morph whose text is alphabetic (rest keep without etymology).
-    """
-    whole_text = ' '.join([sentence.sentence for sentence in sentences])
-    lematized_text = [lemma_base.strip().split('-')[0] for lemma_base in get_lemmata_deprecated(whole_text)]
-    words = []
-    for sentence in sentences:
-        words.extend(sentence.words)
-
-    if len(lematized_text) != len(words):
-        # print(lematized_text, "Lemmata")
-        # print(sentence.words, "Sentence")
-        raise Exception(f"An error occured, the count of lemmata: {len(lematized_text)} obtained from sentence is not same as the number of words in the sentence: {len(words)}.")
-    
-    for word,lemma in zip(words, lematized_text):
-            word_etymology = words_etymology.get(word.text,[])
-            if word_etymology == []:
-                word_etymology = words_etymology.get(lemma,[])                
-
-            for morph in word:
-                if morph.text.isalpha():
-                    if morph.morph_type == Morph.MorphType.ROOT:
-                        if word_etymology:
-                            morph.etymology = word_etymology
-                        else:
-                            morph.etymology = ["ces"]
-                    elif morph.morph_type == Morph.MorphType.DERIVATIONAL_AFFIX:
-                        affix_etymology = get_affix_etymology(morph.text, word.text, prefixes, suffixes) # returns the etymology or ""
-                        if affix_etymology:
-                            morph.etymology = affix_etymology
-                        else:
-                            morph.etymology = ["ces"]
-                    else:
-                        # Inflectional affix
-                        morph.etymology = ["ces"]
-                else:
-                    pass # keep blank etymology for punctuation, numbers etc.
-    return sentences
-
