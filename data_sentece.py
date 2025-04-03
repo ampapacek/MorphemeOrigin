@@ -110,7 +110,14 @@ class Word:
         Constructs the word's string by concatenating the text of each morph.
         """
         return "".join(morph.text for morph in self.morphs)
-
+    
+    @property
+    def morph_count(self) -> str:
+        """
+        Get the number of morphs in the Word.
+        """
+        return len(self.morphs)
+    
     def __iter__(self) -> Iterator[Morph]:
         """
         Allows iteration over the morphs in the word.
@@ -127,6 +134,17 @@ class Word:
 class DataSentence:
     # A list of Word objects that constitute the sentence.
     words: List[Word]
+
+    @property
+    def morph_count(self) -> str:
+        """
+        Get the number of morphs in the sentence.
+        """
+        count = 0
+        for word in self.words:
+            count += word.morph_count
+        return count
+   
 
     @property
     def sentence(self) -> str:
