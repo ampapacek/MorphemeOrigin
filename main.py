@@ -20,7 +20,8 @@ from utils import (
     evaluate,
     relative_error_reduction,
     remove_targets,
-    statistics
+    write_morph_statistics,
+    count_sentences_words_morphs
 )
 from baselines import (
     DummyModel,
@@ -152,16 +153,16 @@ def main():
     # Load train data
     train_sentences = load_annotations(args.train_file)
 
-    # Print basic stats on dev
-    morph_count, word_count, sentence_count = statistics(
+    write_morph_statistics(
         dev_sentences_target, args.stats_lang_dev, args.stats_morphs_dev
     )
+    sentence_count,word_count,morph_count = count_sentences_words_morphs(dev_sentences_target)
     print(f"Statistics on Dev -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}\n")
 
-    # Print basic stats on train
-    morph_count, word_count, sentence_count = statistics(
+    write_morph_statistics(
         train_sentences, args.stats_lang_train, args.stats_morphs_train
     )
+    sentence_count,word_count,morph_count = count_sentences_words_morphs(train_sentences)
     print(f"Statistics on Train -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}\n")
 
     # Always run dummy internally for baseline
