@@ -4,6 +4,8 @@ from data_sentece import DataSentence,Word,Morph
 from model import Model
 import requests
 import copy
+import urllib.request
+import urllib.error
 
 class DummyModel(Model):
     """
@@ -196,6 +198,10 @@ class WordDictModel(Model):
     (using morph_position).
     If no dictionary entry is found, defaults to ["ces"].
     """
+    class NetworkError(Exception):
+        """Custom exception indicating a network-related failure."""
+        pass    
+
     def __init__(self, word_etym_file: str, affixes_file: str, name: str = "WordDictModel") -> None:
         super().__init__(name)
         self.words_etymology = load_etym_dict(word_etym_file)
@@ -237,7 +243,11 @@ class WordDictModel(Model):
         
         # Build the full text from all sentences.
         whole_text = " ".join(sentence.sentence for sentence in predictions)
-        lemmata = self.get_lemmata(whole_text)
+        try:
+            lemmata = self.get_lemmata(whole_text)
+        except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+            # URLError, HTTPError, or a socket-related OSError indicates network trouble
+            raise WordDictModel.NetworkError(f"Network error contacting MorphoDiTa")        
         
         # Collect all words in the same order.
         all_words:list[Word] = []
@@ -267,3 +277,4 @@ class WordDictModel(Model):
                     else:
                         morph.etymology = ["ces"]
         return predictions
+    

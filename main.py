@@ -112,18 +112,29 @@ def run_model(
         baseline_f1 (float): The baseline F1 score (dummy model).
         mistakes_file (str): If set, logs mistakes to this file.
     """
-    model.fit(train_data)
-    # Remove targets from the data to simulate unlabeled data
-    dev_data = remove_targets(target_data)
-    predictions = model.predict(dev_data)
+    try:
+        print(f"----- {model_name} -----")
+        model.fit(train_data)
+        # Remove targets from the data to simulate unlabeled data
+        dev_data = remove_targets(target_data)
+        predictions = model.predict(dev_data)
 
-    # Evaluate
-    f_score, accuracy = evaluate(predictions, target_data, mistakes_file)
-    improvement = relative_error_reduction(baseline_f1, f_score)
+        # Evaluate
+        f_score, accuracy = evaluate(predictions, target_data, mistakes_file)
+        improvement = relative_error_reduction(baseline_f1, f_score)
 
-    print(f"----- {model_name} -----")
-    print(f"F-score: {f_score:.3f} %, Accuracy: {accuracy:.3f} %")
-    print(f"Relative Error Reduction: {improvement:.3f} %\n")
+        print("Results:")
+        print(f"F-score: {f_score:.3f} %, Accuracy: {accuracy:.3f} %")
+        print(f"Relative Error Reduction: {improvement:.3f} %\n")
+
+    except WordDictModel.NetworkError as net_err:
+        print(f"Network error while running model '{model_name}'.\nThe following exception occured: {net_err}")
+        print()
+    
+    except Exception as e:
+        print(f"Error when running model: '{model_name}'")
+        print(f"The following exception occurred:\n    {e}\n")
+        print()
 
 def main():
     args = parse_args()
