@@ -8874,6 +8874,81 @@ Podle posouzení nezávislého auditu byly však velice špatně strukturovány 
         vý	D	ces
         nos	R	ces
 
+Podle Martina Švehly však nehrozí že by causa Kreditní a průmyslové banky mohla mít bezprostřední vliv na stabilitu obdobných malých finančních ústavů
+    Podle
+        Po	D	ces
+        dle	R	ces
+    Martina
+        Martin	R	ces
+        a	I	ces
+    Švehly
+        Švehl	R	ces
+        y	I	ces
+    však
+        však	D	ces
+    nehrozí
+        ne	D	ces
+        hroz	R	ces
+        í	I	ces
+    že
+        že	D	ces
+    by
+        by	R	ces
+    causa
+        causa	R	lat
+    Kreditní
+        Kredit	R	deu,ita,lat
+        n	D	ces
+        í	I	ces
+    a
+        a	I	ces
+    průmyslové
+        prů	D	ces
+        mysl	R	ces
+        ov	D	ces
+        é	I	ces
+    banky
+        bank	R	ita,deu
+        y	I	ces
+    mohla
+        moh	R	ces
+        l	D	ces
+        a	I	ces
+    mít
+        m	R	ces
+        í	D	ces
+        t	I	ces
+    bezprostřední
+        bez	D	ces
+        pro	D	ces
+        střed	R	ces
+        n	D	ces
+        í	I	ces
+    vliv
+        vliv	R	ces
+    na
+        na	D	ces
+    stabilitu
+        stabil	R	deu,lat
+        it	D	lat
+        u	I	ces
+    obdobných
+        ob	D	ces
+        dob	R	ces
+        n	D	ces
+        ých	D	ces
+    malých
+        mal	R	ces
+        ých	I	ces
+    finančních
+        finanč	R	deu,fra,fro,lat
+        n	D	ces
+        ích	I	ces
+    ústavů
+        ú	D	ces
+        stav	R	ces
+        ů	I	ces
+
 ###Up to this point senteces were from beginning of file ces.sentences.train.tsv, rest is from end of the same file### 
 
 Téma Pobytové Kurzy pro řídící pracovníky vlastníky firem a další kterým časové možnosti nedovolují návštěvu Kurzů a plné soustředění na výuku během týdne
