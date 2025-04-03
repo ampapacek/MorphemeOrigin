@@ -201,16 +201,30 @@ def fill_classification(filepath: str, sentences: List[DataSentence]) ->List[Dat
             morph.morph_type = code_to_morph_type[code]
     return sentences
 
-def statistics(target_sentences: List[DataSentence], languages_file: str, morphs_file: str) -> tuple[int,int,int]:
-    """Writes two files with stats and returns number of moprhs, words and sentences."""
-
+def write_morph_statistics(target_sentences: List["DataSentence"], languages_file: str, morphs_file: str) -> None:
+    """
+    Computes morphological statistics from the given list of sentences and 
+    writes them to the specified files for languages and morphs.
+    
+    Args:
+        target_sentences: A list of DataSentence objects.
+        languages_file: Path to the file where language occurrences will be written. 
+                       If None, no file is written.
+        morphs_file: Path to the file where morph occurrences will be written. 
+                     If None, no file is written.
+                     
+    Note:
+        This function no longer returns anything; it simply writes files 
+        with stats (if the file paths are provided).
+    """
     morph_count = 0
     morphs = defaultdict(Counter)
     languages = Counter()
-    sentences_count = len(target_sentences)
     word_count = 0
+
     for sentence in target_sentences:
         for word in sentence.words:
+            # Skip non-alphabetic single-morph words
             if not word.text.isalpha() and len(word.morphs) == 1:
                 continue
             word_count += 1
@@ -221,22 +235,34 @@ def statistics(target_sentences: List[DataSentence], languages_file: str, morphs
                     etym = ",".join(morph.etymology)
                     morphs[morph.text][etym] += 1
                     languages[etym] += 1
-    if languages_file != None:
+
+    if languages_file is not None:
         with open(languages_file, 'wt') as lang_f:
             for language, count in languages.most_common():
                 print(f"{language}\t{count}", file=lang_f)
-    if morphs_file != None:
+
+    if morphs_file is not None:
         with open(morphs_file, 'wt') as morphs_f:
             lines = []
-            for morph_text, etymology_counter in sorted(morphs.items(), key=lambda item: sum(item[1].values()), reverse=True):
+            # Sort by descending sum of morph counts
+            for morph_text, etymology_counter in sorted(
+                morphs.items(), key=lambda item: sum(item[1].values()), reverse=True
+            ):
                 if len(etymology_counter) > 1:
                     print(f"{morph_text}\t{dict(etymology_counter)}", file=morphs_f)
                 else:
                     lines.append(f"{morph_text}\t{dict(etymology_counter)}")
             for line in lines:
-                print(line,file=morphs_f)
-
-    return morph_count,word_count,sentences_count
+                print(line, file=morphs_f)
+                
+def count_sentences_words_morphs(sentences:List["DataSentence"]):
+    sentence_count = len(sentences)
+    word_count = 0
+    morph_count = 0
+    for sentence in sentences:
+        word_count += len(sentence.words)
+        morph_count += sentence.morph_count
+    return sentence_count,word_count,morph_count
 
 def split(data: List, ratio: float = 0.2, random_seed:int = None) -> Tuple[List[DataSentence], List[DataSentence]]:
     """
