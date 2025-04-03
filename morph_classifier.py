@@ -85,7 +85,7 @@ class MorphClassifier(Model):
 
     def __init__(
         self,
-        name: str = "MorphClassifier",
+        name: str = None,
         classifier_type: Literal["svm", "mlp", "lr"] = "mlp",
         mlp_ensemble_size: int = 1,
         mlp_hidden_size: int = 100,
@@ -104,6 +104,25 @@ class MorphClassifier(Model):
         multi_label: bool = False,
     ) -> None:
         super().__init__(name)
+        if not name:
+            classifier_description = classifier_type.upper()
+            if  classifier_type == 'mlp':
+                classifier_description += f"_{mlp_hidden_size}"
+            if mlp_ensemble_size > 1:
+                classifier_description += f"_ensamble{mlp_ensemble_size}"
+            embeding_description = '_no_emb'
+            if use_word_embedding:
+                embeding_description = '_word_emb'
+            if use_morph_embedding:
+                embeding_description += '_morph_emb'
+            if use_word_embedding or use_morph_embedding:
+                embeding_description += '_dim' + str(embedding_dimension)
+            multi_label_describtion = ''
+            if multi_label:
+                multi_label_describtion = "_multi_label"
+
+
+            self.name = f"{classifier_description}{embeding_description}{multi_label_describtion}_model"
         
         self.pipeline: Optional[Pipeline] = None
 
