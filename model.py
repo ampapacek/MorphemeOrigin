@@ -13,7 +13,10 @@ class Model:
         Args:
             name (str): Name of the model. Defaults to "Model".
         """
-        self.name = name
+        if name:
+            self.name = name
+        else:
+            self.name = "Model"
 
     def fit(self, data):
         """
