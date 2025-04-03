@@ -309,7 +309,7 @@ class MorphClassifier(Model):
         X = df[["text", "word", "morph_type", "morph_position"]]
 
         if self.verbose:
-            print("Fitting MorphClassifier with parameters:")
+            print(f"Fitting MorphClassifier {self.name} with parameters:")
             print(f"  classifier_type={self.classifier_type}")
             if classifier_type == "svm":
                 print(f"  svm_c={self.svm_c}")
@@ -331,7 +331,7 @@ class MorphClassifier(Model):
         self.pipeline.fit(X, y_bin)
 
         if self.verbose:
-            print("MorphClassifier training complete.")
+            print(f"Training complete for model {self.name}")
 
 
     def predict(self, data: List["DataSentence"]) -> List["DataSentence"]:
