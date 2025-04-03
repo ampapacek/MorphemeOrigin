@@ -1,5 +1,6 @@
 from utils import load_annotations,calculate_cohen_kappa,evaluate
 
+# TODO: make this as argumetns of the script
 # Set file paths.
 dev_file_ales = 'annotations/dev.tsv'
 dev_file_tomas = 'annotations/dev_annotator2.tsv'
@@ -11,8 +12,8 @@ dev_sentences_annotator1_ales = load_annotations(dev_file_ales)
 dev_sentences_annotator2 = load_annotations(dev_file_tomas)
 
 
-annotator1 = dev_sentences_annotator2
-annotator2 = dev_sentences_annotator1_ales
+annotator1 = dev_sentences_annotator1_ales
+annotator2 = dev_sentences_annotator2
 f_score, exact_match = evaluate(annotator2,annotator1,differences_file)
 
 print("----- Inter-Annotator Agreement -----")
