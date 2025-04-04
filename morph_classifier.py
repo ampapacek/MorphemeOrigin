@@ -199,7 +199,7 @@ class MorphClassifier(Model):
         if self.use_char_ngrams:
             transformers.append((
                 "char_ngrams",
-                CountVectorizer(analyzer="char", ngram_range=self.char_ngram_range),
+                CountVectorizer(analyzer="char", ngram_range=self.char_ngram_range,lowercase=self.lower_case),
                 "text"
             ))
 
@@ -255,7 +255,7 @@ class MorphClassifier(Model):
             if self.mlp_ensemble_size <= 1:
                 base_classifier = MLPClassifier(
                     hidden_layer_sizes=[self.mlp_hidden_size],
-                    max_iter=300,
+                    max_iter=400,
                     verbose=False,
                     random_state=self.random_state
                 )
