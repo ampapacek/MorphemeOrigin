@@ -102,6 +102,7 @@ class MorphClassifier(Model):
         verbose: bool = True,
         lower_case: bool = True,
         multi_label: bool = False,
+        min_label_freq: int = 2
     ) -> None:
         super().__init__(name)
         if not name:
@@ -145,9 +146,10 @@ class MorphClassifier(Model):
         self.embedding_dimension = embedding_dimension
         self.fasttext_model_path = fasttext_model_path
 
-        # Verbosity and text-lowering
+        # Rest
         self.verbose = verbose
         self.lower_case = lower_case
+        self.min_label_freq = min_label_freq
 
         # Multi-label
         self.multi_label = multi_label
@@ -192,6 +194,17 @@ class MorphClassifier(Model):
         df = pd.DataFrame(morph_rows)
         if df.empty:
             raise ValueError("No training data available (no morphs with non-empty etymology).")
+        
+        # Discard low-frequency labels
+        label_counts = df["label"].value_counts()
+        number_frames_before = len(df)
+        df = df[df["label"].map(label_counts) >= self.min_label_freq]
+        if df.empty:
+            raise ValueError(
+                f"All morphs were discarded because their labels' frequency < {self.min_label_freq}."
+            )
+        if self.verbose:
+            print(f"Removed {number_frames_before-len(df)} morphs with low occurence etymology sequences")
 
         # Build the list of transformers for ColumnTransformer
         transformers = []
