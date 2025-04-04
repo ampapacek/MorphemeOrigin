@@ -12,7 +12,7 @@ and then predicts etymology using various models:
 For each enabled model, the script prints the F-score, accuracy, and 
 the relative error reduction compared to the dummy model baseline.
 """
-
+import time
 import sys
 import argparse
 
@@ -101,6 +101,10 @@ def parse_args():
                         help="Use root and affixes dictionaries as extension to training set.")
     parser.add_argument("--min_seq_occurence", type=int, default=2,
                         help="Minimal number of occurence for etymological sequence to keep that morphs in the train set.")
+    # other
+    parser.add_argument("--quiet",'-q', action="store_true",
+                        help="Disables printing of additional information like timing")
+    
     return parser.parse_args()
 
 def run_model(
@@ -109,7 +113,8 @@ def run_model(
     train_data,
     target_data,
     baseline_f1: float,
-    mistakes_file: str = None
+    mistakes_file: str = None,
+    verbose:bool = True
 ) -> None:
     """
     Fits (if applicable), predicts, evaluates, and prints results for a given model.
@@ -124,16 +129,22 @@ def run_model(
     """
     try:
         print(f"----- {model_name} -----")
+        start_time = time.time()
         model.fit(train_data)
         # Remove targets from the data to simulate unlabeled data
         dev_data = remove_targets(target_data)
+        if verbose:
+            print(f"Computing predictions on test data...")
         predictions = model.predict(dev_data)
 
         # Evaluate
         f_score, accuracy = evaluate(predictions, target_data, mistakes_file)
         improvement = relative_error_reduction(baseline_f1, f_score)
-
-        print("Results:")
+        if verbose:
+            print(f"Predictions computed and evaluated. Total time {time.time()-start_time:.3f} s")
+        if verbose:
+            print()
+            print("Results:")
         print(f"F-score: {f_score:.3f} %, Accuracy: {accuracy:.3f} %")
         print(f"Relative Error Reduction: {improvement:.3f} %\n")
 
@@ -189,21 +200,21 @@ def main():
         mfo_model = MostFrequentOriginModel()
         run_model(mfo_model, mfo_model.name,
                   train_sentences, dev_sentences_target,
-                  baseline_f1, f"mistakes_{mfo_model.name}.tsv")
+                  baseline_f1, f"mistakes_{mfo_model.name}.tsv",verbose=(not args.quiet))
 
     # Possibly run MorphDictModel
     if args.enable_morph_dict:
         md_model = MorphDictModel(args.root_etym_file, args.affixes_file)
         run_model(md_model, md_model.name,
                   train_sentences, dev_sentences_target,
-                  baseline_f1, f"mistakes_{md_model.name}.tsv")
+                  baseline_f1, f"mistakes_{md_model.name}.tsv",verbose=(not args.quiet))
 
     # Possibly run WordDictModel
     if args.enable_word_dict:
         wd_model = WordDictModel(args.word_etym_file, args.affixes_file)
         run_model(wd_model, wd_model.name,
                   train_sentences, dev_sentences_target,
-                  baseline_f1, f"mistakes_{wd_model.name}.tsv")
+                  baseline_f1, f"mistakes_{wd_model.name}.tsv",verbose=(not args.quiet))
 
     # Possibly run MorphClassifier
     if args.enable_morph_classifier:
@@ -230,7 +241,7 @@ def main():
         )
         run_model(learning_model, learning_model.name,
                   train_sentences, dev_sentences_target,
-                  baseline_f1, f"mistakes_{learning_model.name}.tsv")
+                  baseline_f1, f"mistakes_{learning_model.name}.tsv",verbose=(not args.quiet))
 
 
 if __name__ == "__main__":
