@@ -448,6 +448,86 @@ def pprint_sentences(sentences: List[DataSentence], filename: Optional[str] = No
         if close_stream:
             out_stream.close()
 
+def single_morph_sentences_from_dict(morphs_etymology_dict_path: str) -> List[DataSentence]:
+    """
+    Reads an etymology dictionary file and builds a list of single-morph sentences.
+    
+    Each line in the file should be in the format:
+        <entry>\t<comma_separated_etymologies>
+    where <entry> can be:
+      - A prefix (ending with '-') 
+      - A suffix (starting with '-')
+      - An inflectional suffix (starting with '~')
+      - An interfix (starting with '$')
+      - Otherwise, treated as a root (with morph position MorphPosition.ROOT)
+    
+    The function creates a single DataSentence per line, containing one Word
+    with one Morph. The etymology is parsed from the comma-separated values.
+    
+    Args:
+        morphs_etymology_dict_path: Path to the dictionary file containing morph entries.
+    
+    Returns:
+        A list of DataSentence objects, each representing a single-morph sentence.
+    """
+    sentences: List[DataSentence] = []
+    
+    with open(morphs_etymology_dict_path, "rt", encoding="utf-8") as file_in:
+        for line in file_in:
+            line = line.strip()
+            if not line:
+                continue
+            
+            parts = line.split("\t")
+            if len(parts) != 2:
+                # Skip lines not matching the expected format
+                continue
+
+            morph_text = parts[0].strip()
+            etymology_str = parts[1].strip()
+            etymologies = [lang.strip() for lang in etymology_str.split(",") if lang.strip()]
+
+            # Determine morph position and type
+            if morph_text.startswith('-'):
+                # It's a suffix: remove leading '-'
+                morph_text = morph_text[1:]
+                morph_position = Morph.MorphPosition.SUFFIX
+                morph_type = Morph.MorphType.DERIVATIONAL_AFFIX
+            elif morph_text.endswith('-'):
+                # It's a prefix: remove trailing '-'
+                morph_text = morph_text[:-1]
+                morph_position = Morph.MorphPosition.PREFIX
+                morph_type = Morph.MorphType.DERIVATIONAL_AFFIX
+            elif morph_text.startswith('~'):
+                # It's an inflectional suffix: remove leading '~'
+                morph_text = morph_text[1:]
+                morph_position = Morph.MorphPosition.SUFFIX
+                morph_type = Morph.MorphType.INFLECTIONAL_AFFIX
+            elif morph_text.startswith('$'):
+                # It's an interfix: remove leading '$'
+                morph_text = morph_text[1:]
+                morph_position = Morph.MorphPosition.INTERFIX
+                morph_type = Morph.MorphType.DERIVATIONAL_AFFIX
+            elif morph_text.isalpha():
+                # Otherwise, treat as root
+                morph_position = Morph.MorphPosition.ROOT
+                morph_type = Morph.MorphType.ROOT
+            else:
+                # Invalid line
+                continue
+            
+            # Build a single-morph Word in a single-sentence DataSentence
+            single_morph = Morph(
+                text=morph_text,
+                etymology=etymologies,
+                morph_type=morph_type,
+                position=morph_position
+            )
+            single_word = Word([single_morph])
+            single_sentence = DataSentence(words=[single_word])
+            sentences.append(single_sentence)
+    
+    return sentences
 
 def calculate_cohen_kappa(sentences1: List[DataSentence], sentences2: List[DataSentence]) -> float:
     """
