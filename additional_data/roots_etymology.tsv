@@ -34,7 +34,7 @@ klad	ces
 stup	ces
 d	ces
 pust	ces
-řad	hsb
+řad	ces
 port	fra,lat
 vaz	ces
 kup	ces
@@ -166,7 +166,7 @@ táh	ces
 tep	ces
 vrch	ces
 zem	ces
-pan	dsb
+pan	ces
 běl	ces
 boh	ces
 bož	ces
@@ -229,7 +229,7 @@ ruš	ces
 sáz	ces
 slov	ces
 škrt	ces
-šroub	bar,lat
+šroub	lat
 voj	ces
 znam	ces
 žal	ces
@@ -336,7 +336,7 @@ cukr	gmh,ita,ara
 člen	ces
 fekt	lat
 kl	ces
-nut	hsb
+nut	ces
 strukt	lat
 lekt	lat
 ud	ces
@@ -348,7 +348,7 @@ hlas	ces
 hlíd	ces
 chlad	ces
 pres	lat
-je	hsb,dsb,chu
+je	ces
 jist	ces
 klop	ces
 konzerv	lat
@@ -357,7 +357,7 @@ koš	ces
 roh	ces
 krv	ces
 kříž	ces
-lák	hsb
+lák	ces
 lí	ces
 mez	ces
 mín	ces
@@ -379,7 +379,7 @@ straš	ces
 strč	ces
 třep	ces
 šoup	ces
-švih	hsb
+švih	ces
 trest	ces
 trn	ces
 véz	ces
@@ -498,7 +498,7 @@ jas	ces
 jehl	ces
 jin	ces
 nu	ces
-koč	hsb,dsb
+koč	ces
 labor	lat
 vrat	ces
 kuř	ces
@@ -528,7 +528,7 @@ peř	ces
 plen	ces
 tok	ces
 práš	ces
-prásk	hsb
+prásk	ces
 prst	ces
 ran	ces
 trž	ces
@@ -669,7 +669,7 @@ strouh	ces
 stříd	ces
 šach	gmh,dum,fro,pes
 šetř	ces
-škráb	hsb
+škráb	ces
 špič	gmh
 šplh	ces
 tah	ces
@@ -710,7 +710,7 @@ bob	eng
 brán	ces
 cíl	gmh
 civil	deu,fra,lat
-cp	dsb
+cp	ces
 cuc	ces
 čaj	rus
 kněž	ces
@@ -768,7 +768,7 @@ solid	deu,fra,lat
 pet	lat
 kořist	ces
 kouk	deu
-koul	dsb,gmh
+koul	gmh
 koup	ces
 kož	ces
 kras	ces
@@ -799,7 +799,7 @@ věšt	ces
 nerv	lat
 not	deu,lat
 nud	lat
-ocel	hsb
+ocel	ces
 puk	ces
 ví	ces
 památ	ces
@@ -850,7 +850,7 @@ tank	eng
 těsn	ces
 těš	ces
 trat	ces
-truhl	bar,gmh
+truhl	gmh
 třísk	ces
 tvář	ces
 rč	ces
@@ -1215,7 +1215,7 @@ ečk	ces
 čenich	ces
 čest	ces
 li	ces
-čil	hsb
+čil	ces
 č	ces
 čoč	ces
 čtver	ces
@@ -1249,7 +1249,7 @@ drb	ces
 drt	ces
 dřív	ces
 du	lat
-dud	hsb
+dud	ces
 dun	deu
 duž	ces
 dvoř	ces
@@ -1264,7 +1264,7 @@ fréz	deu,fra
 gal	lat,ell
 german	deu
 hadr	gmh
-haj	hsb,lav
+haj	lav
 hala	deu,gmh
 part	deu,gmh
 harfen	ces
@@ -1343,7 +1343,7 @@ kníž	ces
 knír	ces
 kňour	lit,deu
 kobyl	ces
-koc	hsb
+koc	ces
 ovin	ces
 ko	lat
 kokt	ces
@@ -1367,12 +1367,12 @@ kostým	deu,fra,ita,lat
 košil	ces
 kot	ces
 kul	ces
-kouzel	hsb
-kouzl	hsb
+kouzel	ces
+kouzl	ces
 kraul	eng
 kresl	pol,deu
 kriminal	deu,lat
-krot	dsb,chu
+krot	ces
 křeč	ces
 křiž	ces
 kuch	lat
@@ -1432,7 +1432,7 @@ model	deu,fra,ita,lat
 gam	lat
 most	ces
 mraven	ces
-mrsk	hsb
+mrsk	ces
 mršt	ces
 mst	ces
 muchl	ces
@@ -1561,11 +1561,11 @@ syno	lat,ell
 syr	ces
 system	deu,lat,ell
 šavl	ces
-šéf	deu,fra,fro,glg,lat
+šéf	deu,fra,fro,lat
 šejd	ces
 šept	ces
 šir	ces
-škvař	hsb
+škvař	ces
 šláp	ces
 šovin	fra
 špek	deu
@@ -1581,7 +1581,7 @@ tip	eng
 tisíc	ces
 titul	lat
 tkan	ces
-tlesk	hsb,eng
+tlesk	eng
 tlum	pol
 tlumoč	ces
 traktor	deu,eng,fra
@@ -1603,7 +1603,7 @@ uzl	ces
 úz	ces
 vandal	deu
 vdov	ces
-věc	dsb,bul,chu
+věc	ces
 veterin	deu,fra,lat
 veteš	ces
 věž	ces
@@ -1611,7 +1611,7 @@ vibr	lat
 vil	deu,lat
 violon	ita
 vít	ces
-vítěz	hsb
+vítěz	ces
 vlek	ces
 volej	eng
 vosk	ces
@@ -1622,7 +1622,7 @@ vřísk	ces
 vzor	pol
 zoo	ell
 zrc	ces
-zvíř	dsb
+zvíř	ces
 žebř	ces
 žehn	gmh,lat
 želv	ces
@@ -1728,7 +1728,7 @@ couv	deu,gmh
 ve	ces
 ctn	ces
 cvak	ces
-čár	dsb
+čár	ces
 čechr	ces
 čerstv	ces
 čert	ces
@@ -1910,11 +1910,11 @@ hymn	lat,ell
 téz	ell
 hýř	ces
 hyzd	ces
-chalup	hsb
+chalup	ces
 chirurg	lat,ell
 chlast	ces
 chlup	ces
-chmur	hsb
+chmur	ces
 chobot	srp,hrv
 choreo	ell
 chrast	ces
@@ -1944,7 +1944,7 @@ jahod	ces
 jal	ces
 jan	ell
 jar	ces
-jás	hsb
+jás	ces
 játr	ces
 jazyk	ces
 jazz	eng
@@ -1959,7 +1959,7 @@ ouc	ces
 jud	eng,jpn
 kabaret	fra
 kác	ces
-kacíř	hsb,gmh
+kacíř	gmh
 kadet	fra,lat
 kádr	deu,fra,ita,lat
 kafr	gmh,lat,ara
@@ -2117,7 +2117,7 @@ másl	ces
 masoch	deu
 mašl	deu
 matr	deu,gmh,ita
-máv	dsb
+máv	ces
 medit	lat
 medvěd	ces
 melior	lat
@@ -2146,8 +2146,8 @@ mlž	ces
 mlh	ces
 mlouv	ces
 modi	lat
-modr	hsb
-modř	hsb
+modr	ces
+modř	ces
 moh	ces
 molekul	fra,lat
 moment	deu,lat
@@ -2233,7 +2233,7 @@ pleb	deu,lat
 plemen	ces
 plesn	ces
 ploš	deu
-plotn	bar,deu
+plotn	deu
 pohár	slk,lat,ell
 sémi	ell
 ponděl	ces
@@ -2253,7 +2253,7 @@ vlak	ces
 póz	deu,fra,lat
 prach	ces
 pramen	ces
-prašt	hsb
+prašt	ces
 prázdn	ces
 premi	lat
 prezid	lat
@@ -2270,15 +2270,15 @@ příšer	ces
 tak	ces
 ptáč	ces
 puc	deu
-půd	hsb
+půd	ces
 pudr	deu,fra,fro,lat
 punc	deu,ita,lat
 punčoch	deu
 pur	fra,lat
 purpur	deu,lat
-pus	bar
+pus	deu
 puš	gmh,lat,ell
-pysk	dsb
+pysk	ces
 ráč	ces
 rádi	deu,eng,lat
 rajc	deu,eng
@@ -2390,7 +2390,7 @@ systém	deu,lat,ell
 šíř	ces
 šiš	ces
 škatul	slv,lat
-škrab	hsb
+škrab	ces
 škvár	ces
 škyt	ces
 šmik	ces
@@ -2398,7 +2398,7 @@ systém	deu,lat,ell
 šofér	deu,fra
 šok	eng,fra
 šperk	ces
-špon	bar,deu
+špon	deu
 šťast	ces
 štěbet	ces
 štk	ces
@@ -2457,7 +2457,7 @@ vandr	deu
 vápn	ces
 varhan	lat,ell
 vář	ces
-vášn	hsb
+vášn	ces
 včer	ces
 večer	ces
 vějíř	rus,deu
@@ -2603,15 +2603,15 @@ batik	nld,zlm
 batist	fra
 bazilik	lat,ell
 bažin	ces
-bděl	dsb,chu
+bděl	ces
 beati	lat
-bedl	hsb,pol
+bedl	pol
 bedr	ces
 beduín	fra,ara
 bekhend	eng
 belh	ces
 benzin	spa,ara
-beran	hsb
+beran	ces
 bér	rus
 běs	ces
 best	lat
@@ -2649,7 +2649,7 @@ boch	gmh,lat
 bój	deu,dum,fro
 bojkot	eng
 botan	deu,lat,ell
-boud	dsb
+boud	ces
 ňák	ces
 box	eng
 brašn	ces
@@ -2659,7 +2659,7 @@ brept	ces
 brigád	deu,fra,ita
 brnk	ces
 brod	ces
-brokát	deu,ita,glg
+brokát	deu,ita
 brom	deu,fra,ell
 bronz	deu,ita
 broskv	lat
@@ -2691,7 +2691,7 @@ buvol	lat,ell
 býč	ces
 bystř	ces
 bzik	ces
-cajk	bar,deu
+cajk	deu
 car	rus,orv
 cech	gmh
 celer	deu,ita,lat,ell
@@ -2717,7 +2717,7 @@ cizrn	deu,gmh,lat
 clearing	eng,fro,lat
 com	eng,fra,lat
 puter	eng,fra,lat
-cop	hsb,deu
+cop	deu
 coul	deu
 cud	ces
 cuker	gmh,ita,ara
@@ -2730,7 +2730,7 @@ cypřiš	lat,ell
 čah	ces
 čáp	ces
 čap	ces
-čárk	dsb
+čárk	ces
 čardáš	hun
 čed	ces
 češ	ces
@@ -3016,7 +3016,7 @@ hůr	pol
 horizont	deu,lat,ell
 hormon	eng,ell
 horor	eng,lat
-hot	hsb,deu,fra
+hot	deu,fra
 hotel	deu,fra,fro,lat
 hup	ces
 housen	ces
@@ -3045,7 +3045,7 @@ humr	deu,isl
 husar	hun
 houst	ces
 hutn	ces
-hvozd	hsb,pol
+hvozd	pol
 hýb	ces
 hyen	lat,ell
 hýk	ces
@@ -3069,7 +3069,7 @@ chom	ces
 chór	lat,ell
 chout	ces
 chrabr	rus
-chrám	dsb,chu
+chrám	ces
 chrč	ces
 chrchl	ces
 chrl	ces
@@ -3084,7 +3084,7 @@ chuligán	rus,eng,gle
 chumel	ces
 chva	ces
 chvat	ces
-chvil	dsb
+chvil	ces
 chýl	ces
 chyst	ces
 ideál	lat
@@ -3282,7 +3282,7 @@ klot	eng
 kluč	ces
 kluk	ces
 klystýr	lat,ell
-kmen	dsb
+kmen	ces
 kmotř	ces
 kniž	ces
 knof	gmh
@@ -3290,7 +3290,7 @@ knokaut	eng
 knot	gmh
 kňuč	lit,deu
 kobalt	deu
-our	hsb
+our	ces
 ist	lat
 kofein	deu
 kokain	spa
@@ -3401,7 +3401,7 @@ křen	ces
 křes	ces
 křest	ces
 křišťál	lat
-kšeft	bar
+kšeft	deu
 kšilt	deu
 kučer	ces
 kudl	fra,lat
@@ -3447,7 +3447,7 @@ latex	lat
 láv	deu,ita,lat
 lebed	ces
 leda	ces
-ledv	dsb,chu
+ledv	ces
 legion	lat
 legitim	lat
 lecht	ces
@@ -3473,7 +3473,7 @@ liturg	lat,ell
 lob	eng
 lobb	eng,lat,deu
 lodyh	pol,rus
-lokaj	bar,fra
+lokaj	fra
 lokal	deu,fra,lat
 loket	ces
 lokomotiv	eng,lat
@@ -3482,7 +3482,7 @@ lop	ces
 lopot	ces
 lotos	ell
 loutn	gmh
-louž	dsb
+louž	ces
 lucern	lat
 lukrat	lat
 lulk	ces
@@ -3583,9 +3583,9 @@ morén	deu,fra
 morfi	ell
 moruš	lat,ell
 úmor	ces
-mosaz	hsb
+mosaz	ces
 moskyt	deu,spa,lat
-mošt	bar,lat
+mošt	lat
 moudr	ces
 moz	deu,fra,ita,lat
 aik	deu,fra,ita,lat
@@ -3603,7 +3603,7 @@ mrň	ces
 mrož	rus
 mrtv	ces
 muk	ces
-muml	hsb,deu
+muml	deu
 mus	ces
 muskul	lat
 muslim	ara
@@ -3611,7 +3611,7 @@ mušl	deu,lat
 múz	lat
 mýk	ces
 smyk	ces
-mýl	dsb
+mýl	ces
 myrt	deu,lat,ell
 myšl	ces
 myš	ces
@@ -3628,7 +3628,7 @@ máh	ces
 mah	ces
 rafič	lat,ell
 narcis	deu,lat,ell
-nárt	hsb
+nárt	ces
 ruž	ces
 nať	ces
 naturál	lat
@@ -3636,7 +3636,7 @@ vig	lat
 navštív	ces
 negat	lat
 horáz	ces
-ap	hsb
+ap	ces
 neon	eng,ell
 řest	ces
 nešt	ces
@@ -3670,7 +3670,7 @@ léc	ces
 loh	ces
 obol	lat,ell
 oř	ces
-obr	hsb
+obr	ces
 ratl	ces
 rát	ces
 obyčej	ces
@@ -3728,7 +3728,7 @@ palisandr	fra,nld
 palič	ces
 pamat	ces
 paměť	ces
-panen	dsb
+panen	ces
 pancéř	gmh,fro,lat
 panoptik	deu,eng,ell
 papr	srp,hrv
@@ -3899,7 +3899,7 @@ pubert	lat
 publik	lat
 public	lat
 publ	lat
-rys	hsb
+rys	ces
 pukl	ces
 puntík	gmh,lat
 purkrab	gmh
@@ -4034,7 +4034,7 @@ sklíč	ces
 sklář	ces
 skob	ces
 skořic	ces
-skot	dsb,chu
+skot	ces
 skreč	eng
 skříň	lat
 skuteč	ces
@@ -4126,7 +4126,7 @@ svěd	ces
 svíčk	ces
 sviň	ces
 svůd	ces
-sýkor	dsb
+sýkor	ces
 sýp	ces
 sýr	ces
 sysl	ces
@@ -4811,7 +4811,7 @@ baziliš	lat,ell
 bazil	lat,ell
 baz	deu
 baž	ces
-bd	dsb,chu
+bd	ces
 beat	eng
 bečk	ces
 běd	ces
@@ -4831,8 +4831,8 @@ bengál	eng
 benig	lat
 benzen	spa,ara
 benzol	spa,ara
-berán	hsb
-beránč	hsb
+berán	ces
+beránč	ces
 beruš	ces
 beryl	lat,ell
 běsn	ces
@@ -5032,7 +5032,7 @@ brčk	ces
 brloh	rus
 brňavk	ces
 brojler	eng,fro
-bro	ita,glg
+bro	ita
 bronch	lat,ell
 bronto	ell
 broskvoň	lat
@@ -5064,7 +5064,7 @@ bryskn	fra,ita
 brzdn	ces
 brzy	ces
 brzo	ces
-břečk	hsb
+břečk	ces
 -břednout	ces
 břehule	ces
 břeh	ces
@@ -5237,7 +5237,7 @@ cloum	ces
 cmrnd	ces
 co	ces
 coca-cola	spa
-copán	hsb,deu
+copán	deu
 copy	eng
 right	eng
 crčivý	ces
@@ -5292,7 +5292,7 @@ přesčas	ces
 čatni	eng
 čau	ita
 čečetk	ces
-čehý	hsb,deu,fra
+čehý	deu,fra
 Čes	ces
 Čech	ces
 čejk	ces
@@ -5315,7 +5315,7 @@ emeř	ces
 červn	ces
 červeň	ces
 červánky	ces
-čeřen	dsb
+čeřen	ces
 pačes	ces
 czesać	ces
 česáť	ces
@@ -5706,7 +5706,7 @@ dzierżeć	ces
 deržáť	ces
 dr`žati	ces
 drъžati	ces
-dřeň	hsb
+dřeň	ces
 dřevák	ces
 drzewo	ces
 dérevo	ces
@@ -5972,8 +5972,8 @@ fábor	ces
 fab	lat
 fac	ces
 fack	ces
-fač	bar,lat
-fáč	bar,lat
+fač	lat
+fáč	lat
 fag	ell
 fagot	deu,ita
 fachč	deu
@@ -6039,7 +6039,7 @@ fenomen	deu,lat,ell
 fenomén	deu,lat,ell
 fenykl	lat
 ferbl	deu
-ferin	dsb
+ferin	ces
 ferment	lat
 fero-	lat
 fertil	lat
@@ -6155,7 +6155,7 @@ fotel	fra,fro,frk
 foto-1	ell
 buň	ces
 syntéz	lat,ell
-fotr	bar
+fotr	deu
 fouň	ces
 fous	ces
 fox	eng
@@ -6345,7 +6345,7 @@ grimas	deu,fra,deu
 griotk	fra,lat
 grizzl	eng,enm,fra
 gró	fra,lat
-gróf	bar
+gróf	deu
 grog	eng
 grogg	eng
 groš	lat
@@ -6366,7 +6366,7 @@ habaďúr	lat
 habán	deu
 háb	lat
 haciend	spa,lat
-hač	hsb,lav
+hač	lav
 háč	deu
 háď	ces
 háda	ces
@@ -6448,7 +6448,7 @@ hegemonic	ell
 hej	ces
 hejl	ces
 hejn	ces
-hejsek	hsb
+hejsek	ces
 hejtman	deu
 hekatomb	ell
 hektar	fra,ell
@@ -6522,7 +6522,7 @@ hlink	ces
 hlín	ces
 hlísta	ces
 hlíst	ces
-hlív	dsb
+hlív	ces
 hlíznat	ces
 hlož	ces
 hlomoz	ces
@@ -6649,7 +6649,7 @@ hrách	ces
 hranat	ces
 hranol	ces
 hrana1	ces
-hrana2	hsb,dsb,chu
+hrana2	ces
 hráz	ces
 hrbol	ces
 hrč	ces
@@ -6725,7 +6725,7 @@ hydrant	eng,ell
 hydro-	ell
 hydro	ell
 hygroskop	ell
-hyje	hsb,deu,fra
+hyje	deu,fra
 hýl	ces
 hymen	ell
 nehynoucí	ces
@@ -6735,12 +6735,12 @@ hypo-	ell
 chondric	ell
 hypokoristikon	ell
 hytl	deu
-hýžď	dsb
-hýžd	dsb
+hýžď	ces
+hýžd	ces
 chabrus	deu,heb
 chalcedon	lat,ell
 chaluh	ces
-chaloup	hsb
+chaloup	ces
 chám	ces
 chám2	ces
 chamraď	ces
@@ -6837,8 +6837,8 @@ nechutný	ces
 teb	ces
 chvást	ces
 -chvátit	ces
-chvě	hsb
-chvíl	dsb
+chvě	ces
+chvíl	ces
 chvojk	ces
 chvoj	ces
 chvost	ces
@@ -6966,7 +6966,7 @@ jarmark	deu
 jař	ces
 jařin	ces
 jářku	ces
-jásot	hsb
+jásot	ces
 jasnost	ces
 jat	ces
 jatk	ces
@@ -7009,11 +7009,11 @@ ješita	ces
 ješt	ces
 ještěř	ces
 ještěrk	ces
-jechać	hsb,dsb,chu
-jéchať	hsb,dsb,chu
-jȁhati	hsb,dsb,chu
-jachati	hsb,dsb,chu
-jet	hsb,dsb,chu
+jechać	ces
+jéchať	ces
+jȁhati	ces
+jachati	ces
+jet	ces
 jetelin	ces
 jezdec	ces
 jížď	ces
@@ -7037,7 +7037,7 @@ jín	ces
 jinoš	ces
 jino	ces
 jinud	ces
-jír	hsb,dsb
+jír	ces
 jiř	ces
 jiřink	deu
 jiřin	deu
@@ -7329,7 +7329,7 @@ klacek	deu
 kladiv	ces
 klak	fra
 klakson	eng
-klandr	bar
+klandr	deu
 klán	ces
 klapot	ces
 klapk	deu
@@ -7396,7 +7396,7 @@ klůcek	deu
 klouč	ces
 klukovin	ces
 kmán	deu
-kmín	dsb
+kmín	ces
 kmet	ces
 knajp	deu
 knajpovat	deu
@@ -7424,7 +7424,7 @@ koberc	lat
 koberec	lat
 kobk	gmh
 kobr	por,lat
-ouř	hsb
+ouř	ces
 kočí	hun
 kočko	pol
 kodein	fra,ell
@@ -7435,7 +7435,7 @@ koflík	gmh,lat
 kognit	eng,lat
 kohoutek	ces
 kohoutový	ces
-koch	dsb
+koch	ces
 koit	lat
 kój	deu,nld,dum,lat
 kojot	eng,spa
@@ -7446,7 +7446,7 @@ kokil	fra,lat,ell
 kokon	fra,lat,ell
 kokoř	ces
 kokosov	deu,por,fra,lat
-kokot	dsb,pol,chu,slk
+kokot	ces
 kokp	eng
 kokrhavý	ces
 kokršpaněl	eng,fro,lat
@@ -7679,17 +7679,17 @@ kukadla	deu
 kukátk	deu
 kukuč	deu
 koukol	ces
-kule	dsb,gmh
-kulk	dsb,gmh
-kulový	dsb,gmh
-kulovnice	dsb,gmh
-kulat	dsb,gmh
-atin	dsb,gmh
-kuleč	dsb,gmh
-kulit	dsb,gmh
-kúle	dsb,gmh
-gul’a	dsb,gmh
-tv.)	dsb,gmh
+kule	gmh
+kulk	gmh
+kulový	gmh
+kulovnice	gmh
+kulat	gmh
+atin	gmh
+kuleč	gmh
+kulit	gmh
+kúle	gmh
+gul’a	gmh
+tv.)	gmh
 skus	ces
 kąsać	ces
 kusáť	ces
@@ -7780,7 +7780,7 @@ kročej	ces
 -krojit	ces
 krokev	ces
 krosn	ces
-krotk	dsb,chu
+krotk	ces
 krouc	ces
 kruc	ces
 kręcić	ces
@@ -7792,7 +7792,7 @@ krtek	ces
 kruci	lat
 kruč	ces
 krucht	gmh,lat
-krumpáč	bar
+krumpáč	deu
 krunýř	ces
 krůp	ces
 krust	deu,lat
@@ -7832,12 +7832,12 @@ křoup	ces
 křtin	ces
 křtěn	ces
 křupky	ces
-ksicht	bar
-ksindl	bar
+ksicht	deu
+ksindl	deu
 kšaft	gmh
-kšeftík	bar
-kšefts	bar
-kšír	bar
+kšeftík	deu
+kšefts	deu
+kšír	deu
 kštic	ces
 kter	ces
 kuba1	ell
@@ -7903,7 +7903,7 @@ kuřecí	ces
 -kusit	ces
 kust	lat
 kušn	deu
-kutál	dsb,gmh
+kutál	gmh
 kutl	deu
 kutn	deu,lat,deu
 kutr	deu,eng
@@ -7920,8 +7920,8 @@ kvasink	ces
 kvaš	fra,ita,lat
 kvazar	eng,lat
 kvazi-	lat
-kvelb	bar
-kvér	bar
+kvelb	deu
+kvér	deu
 kverulant	deu,lat
 kvítek	ces
 kvítk	ces
@@ -7965,7 +7965,7 @@ láčk	goh
 lač	ces
 lačn	ces
 sladit	ces
-lado	hsb
+lado	ces
 lád	deu
 lady	eng,enm,ang
 lafet	deu,fra,lat
@@ -8032,8 +8032,8 @@ leč2	ces
 léčk	ces
 leč	hun
 ledoborec	ces
-ledvink	dsb,chu
-ledvin	dsb,chu
+ledvink	ces
+ledvin	ces
 legal	lat
 legál	lat
 legát	lat
@@ -8549,7 +8549,7 @@ mne	ces
 mnemo	ell
 mniš	ces
 mnich	ces
-mník	hsb
+mník	ces
 mníti	pol,chu
 mňouk	ces
 mob	fra,lat
@@ -8614,7 +8614,7 @@ můst	ces
 moš	ces
 ničk	ces
 mošn	ces
-moštárn	bar,lat
+moštárn	lat
 motan	ces
 moták	ces
 smot	ces
@@ -8628,7 +8628,7 @@ motyč	ces
 motyk	ces
 motýlek	ces
 motýl	ces
-moud	hsb
+moud	ces
 moudř	ces
 mouch	ces
 mouk	ces
@@ -8671,8 +8671,8 @@ mumraj	deu,fra,frm,spa
 mundúr	deu,fra
 munič	deu,frm,lat
 munic	deu,frm,lat
-můř	hsb
-muř	hsb
+můř	ces
+muř	ces
 murén	lat,ell
 must	eng,spa
 mustr	deu,ita,lat
@@ -8752,8 +8752,8 @@ ně-	ces
 nebešť	ces
 nebo	ces
 neboť	ces
-bozíz	hsb
-boz	hsb
+bozíz	ces
+boz	ces
 cesér	fra,lat
 neck	ces
 mrl	ces
@@ -8905,8 +8905,8 @@ obl	ces
 b	ces
 obut	ces
 uv	ces
-obř	hsb
-obrovit	hsb
+obř	ces
+obrovit	ces
 obrn	ces
 obrněnec	ces
 brtlík	ces
@@ -8914,7 +8914,7 @@ servat	lat
 žer	ces
 oc	ces
 ocás	ces
-ocelář	hsb
+ocelář	ces
 octan	ces
 ocet	ces
 cún	ces
@@ -8952,9 +8952,9 @@ oko	ces
 okolo	ces
 koral	ces
 okrs	ces
-kří	hsb
-okř	hsb
-okřín	hsb
+kří	ces
+okř	ces
+okřín	ces
 oktáv	lat
 oktet	ita,lat
 oktroj	deu,fra,lat
@@ -9084,7 +9084,7 @@ pa-	ces
 pá-	ces
 pȁ	ces
 pack	deu,fra
-pác	bar
+pác	deu
 fism	deu,fra,lat
 padavka	ces
 spadat	ces
@@ -9101,7 +9101,7 @@ katin	pol
 zapáchat	ces
 páchnout1	ces
 páchnout2	ces
-pajšl	bar
+pajšl	deu
 pajzl	deu,heb
 pakliže	ces
 páčk	ces
@@ -9139,9 +9139,9 @@ pamp	spa
 pampel	ces
 pampeliš	ces
 pan-	ell
-panský	dsb
-pann	dsb
-paňác	dsb
+panský	ces
+pann	ces
+paňác	ces
 pancíř	gmh,fro,lat
 panč	deu
 panda	eng
@@ -9149,7 +9149,7 @@ pandán	fra,lat
 ěr	spa,deu
 pánv	lat,ell
 pánev	lat,ell
-pangejt	bar,fra
+pangejt	fra
 panchart	gmh
 pankový	eng
 pank	eng
@@ -9325,7 +9325,7 @@ peripeti	fra,ell
 perkelt	hun
 perkus	lat
 leť	lat
-perlík	hsb
+perlík	ces
 permon	deu
 permut	lat
 perník	lat,ell
@@ -9393,19 +9393,19 @@ pikl	ces
 piknik	eng,fra
 pikola	ita
 pikolík	ita
-piksl	bar,deu,lat,ell
+piksl	deu,lat,ell
 pilk	ces
 pilaf	tur,pes
 pilíř	lat
-píl	dsb
+píl	ces
 pilot1	deu,fra,ita,ell
 pilot2	deu,fra,lat
 pilul	deu,lat
-pinčl	bar,deu
-pinč	bar,deu
+pinčl	deu
+pinč	deu
 pind	deu
 pinď	deu
-pingl	bar,deu
+pingl	deu
 pong	eng
 ping-pong	eng
 pini	lat
@@ -9456,7 +9456,7 @@ plameň	ces
 pláň	gmh
 plaňk	deu,gmh,lat
 plankton	deu,ell
-plást	hsb
+plást	ces
 plastelín	deu
 tičnost	deu,fra,lat,ell
 plát1	ces
@@ -9500,11 +9500,11 @@ plít	ces
 plíž	ces
 plň	ces
 plůd	ces
-plonk	bar,deu
+plonk	deu
 ploštic	ces
 plůtek	ces
 plotic	ces
-plotýn	bar,deu
+plotýn	deu
 plova	ces
 plsť	ces
 plť	ces
@@ -9613,7 +9613,7 @@ post-	lat
 poste restante	fra,lat
 posthum	lat
 postulát	lat
-šmourn	hsb
+šmourn	ces
 áck	deu,ita,lat
 poštěváček	ces
 poštolk	ces
@@ -9649,7 +9649,7 @@ prack	deu,ita,lat
 prá	ces
 práh	ces
 prah	ces
-prak	dsb
+prak	ces
 pramic	ces
 pram	ces
 prám	ces
@@ -9718,7 +9718,7 @@ privát	deu,lat
 privilegi	lat
 prizm	deu,lat,ell
 prkotin	ces
-pro	hsb,lit,got,sga,lat,ell
+pro	lit,got,sga,lat,ell
 pro-1	lat,ell
 pro-2	lat
 bošt	lat
@@ -9873,7 +9873,7 @@ purkmistr	gmh,lat
 půst	ces
 propusť	ces
 pusť	ces
-puškvor	bar
+puškvor	deu
 půtk	ces
 putyk	deu,lat,ell
 puzzl	eng
@@ -9995,7 +9995,7 @@ rej	gmh,fro
 rejnok	deu
 rejs	ces
 rejstř	lat
-rejtar	bar
+rejtar	deu
 rejž	gmh,lat
 rekc	lat
 konvalescent	deu,lat
@@ -10014,7 +10014,7 @@ reminiscenc	deu,lat
 remork	fra,lat,ell
 rempl	deu
 remul	deu,fra
-rendl	bar
+rendl	deu
 reneg	deu,fra,ita,lat
 renet	deu,fra,fro,lat
 renom	fra,lat
@@ -10472,9 +10472,9 @@ skv	ces
 skvrnk	ces
 skvrnit	ces
 skvrn	ces
-skyt	hsb
-skýt	hsb
-skýv	dsb
+skyt	ces
+skýt	ces
+skýv	ces
 slabič	lat,ell
 slaboš	ces
 slaďák	ces
@@ -10553,8 +10553,8 @@ smolař	ces
 smolinec	ces
 myč	ces
 mýč	ces
-snadn	dsb
-snad	dsb
+snadn	ces
+snad	ces
 snah	ces
 snach	ces
 snajpr	eng
@@ -10938,7 +10938,7 @@ syž	fra,lat
 šašl	rus,tat
 šatn	deu
 šatl	deu,fra,lat
-šéfk	deu,fra,fro,glg,lat
+šéfk	deu,fra,fro,lat
 šejk	eng,fra,ara
 šejkr	eng
 šla	ces
@@ -10995,9 +10995,9 @@ výšiv	ces
 škor	ces
 škorpion	deu,lat,ell
 škorp	ces
-škrabanin	hsb
-škrabk	hsb
-škrabák	hsb
+škrabanin	ces
+škrabk	ces
+škrabák	ces
 škral	ces
 škrkavk	ces
 škrobárn	ces
@@ -11007,8 +11007,8 @@ výšiv	ces
 škrund	ces
 škubánky	ces
 škuner	eng
-škvar	hsb
-škvark	hsb
+škvar	ces
+škvark	ces
 škvor	ces
 škvr	ces
 šlágr	deu
@@ -11064,7 +11064,7 @@ vadl	deu,gmh
 špac	deu,ita,lat
 špacír	deu,ita,lat
 špaček	ces
-špag	bar,ita
+špag	ita
 špagety	deu,ita
 špachtl	deu,lat,ell
 špajz	deu
@@ -11093,7 +11093,7 @@ vadl	deu,gmh
 špíz	deu
 šplouch	ces
 šprajc	deu
-šproch	bar,deu
+šproch	deu
 šprot	deu
 šprťouchlata	deu
 špulk	deu
@@ -11102,7 +11102,7 @@ vadl	deu,gmh
 šrajt	deu
 ofl	deu
 šrám	gmh
-šramot	hsb
+šramot	ces
 šraňk	deu
 šrapne	deu,eng
 šrot	deu
@@ -11133,15 +11133,15 @@ ofl	deu
 štok	deu
 štokrle	deu
 štól	lat
-štolb	bar
+štolb	deu
 štorc	deu
 štos	deu
 štoud	goh
 šťuch	deu
 šťovík	ces
 štrád	ita,lat
-štráf	bar,deu
-štrách	bar
+štráf	deu
+štrách	deu
 štramand	deu
 štram	deu
 štrap	deu,ita
@@ -11183,7 +11183,7 @@ ofl	deu
 ševc	ces
 švest	ces
 švestk	ces
-švihák	hsb
+švihák	ces
 švitoř	deu
 švunk	deu
 tabat	fra
@@ -11194,8 +11194,8 @@ tábo	ces
 ř	ces
 táboř	ces
 taburet	fra,fro,frm
-tácek	bar,deu,ita,ara
-tác	bar,deu,ita,ara
+tácek	deu,ita,ara
+tác	deu,ita,ara
 tady	ces
 tág	deu,spa
 tahac	ces
@@ -11500,7 +11500,7 @@ trpasl	ces
 trpas	ces
 trpaslík	ces
 trubad	fra,lat
-truhlík	bar,gmh
+truhlík	gmh
 trumpetk	deu,fra,fro,frk
 trup	ces
 trusk	ces
@@ -11687,7 +11687,7 @@ valach	deu
 valdhor	deu
 valenč	deu,lat
 valenc	deu,lat
-valch	bar
+valch	deu
 nával	ces
 příval	ces
 zával	ces
@@ -11711,7 +11711,7 @@ varieté	fra,lat
 vařič	ces
 vařečk	ces
 á	ces
-vášeň	hsb
+vášeň	ces
 svá	ces
 věv	ces
 vatr	ces
@@ -11853,7 +11853,7 @@ svíj	ces
 závi	ces
 ital	deu,lat
 vitál	deu,lat
-vítězn	hsb
+vítězn	ces
 vítr	ces
 vitr	deu,fra,lat
 vitrín	deu,fra,lat
@@ -11955,7 +11955,7 @@ vy	ces
 wy-	ces
 vy-	ces
 vydr	ces
-heň	hsb
+heň	ces
 hřez	ces
 -vykat	ces
 ňat	ces
@@ -11999,7 +11999,7 @@ zad	ces
 zád	ces
 hálk	ces
 hradn	ces
-záh	hsb
+záh	ces
 zajíč	ces
 zaječ	ces
 zajíc	ces
@@ -12034,7 +12034,7 @@ závod1	ces
 závod2	rus
 vrať	ces
 zbl	ces
-zbož	hsb
+zbož	ces
 brkl	ces
 zbrk	ces
 broc	ces
