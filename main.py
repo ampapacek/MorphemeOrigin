@@ -13,6 +13,7 @@ For each enabled model, the script prints the F-score, accuracy, and
 the relative error reduction compared to the dummy model baseline.
 """
 
+import sys
 import argparse
 
 from utils import (
@@ -21,7 +22,8 @@ from utils import (
     relative_error_reduction,
     remove_targets,
     write_morph_statistics,
-    count_sentences_words_morphs
+    count_sentences_words_morphs,
+    single_morph_sentences_from_dict
 )
 from baselines import (
     DummyModel,
@@ -83,6 +85,8 @@ def parse_args():
                         help="Classifier type: 'svm', 'mlp', or 'lr' (default: mlp).")
     parser.add_argument("--mlp_hidden_size", type=int, default=100,
                         help="Hidden layer size for MLP classifier (default: 100).")
+    parser.add_argument("--mlp_ensamble_size", type=int, default=1,
+                        help="Number of MLP classifiers in an ensamble (default: 1).")
     parser.add_argument("--random_state", type=int, default=34867991,
                         help="Random seed for the MorphClassifier (default: 34867991).")
     parser.add_argument("--use_word_embedding", action="store_true",
@@ -91,7 +95,12 @@ def parse_args():
                         help="Use a morph embedding feature in the MorphClassifier.")
     parser.add_argument("--embedding_dimension", type=int, default=300,
                         help="Embedding dimension if using embeddings (default: 300).")
-
+    parser.add_argument("--multi_label", action="store_true",
+                        help="Enable multi_label classification. Instead of treating whole sequence as one label.")
+    parser.add_argument("--extend_train", action="store_true",
+                        help="Use root and affixes dictionaries as extension to training set.")
+    parser.add_argument("--min_seq_occurence", type=int, default=2,
+                        help="Minimal number of occurence for etymological sequence to keep that morphs in the train set.")
     return parser.parse_args()
 
 def run_model(
@@ -198,6 +207,15 @@ def main():
 
     # Possibly run MorphClassifier
     if args.enable_morph_classifier:
+        if args.extend_train:
+            train_sentences += single_morph_sentences_from_dict(args.root_etym_file)
+            train_sentences += single_morph_sentences_from_dict(args.affixes_file)
+        else:
+            # if the train is not extended there is no need  to remove etym sequences with low frequency
+            if args.min_seq_occurence == 2:
+                # if the argument was kept on default set it to 1 (keep all sequences)
+                args.min_seq_occurence = 1
+
         learning_model = MorphClassifier(
             name=args.model_name,
             random_state=args.random_state,
@@ -205,7 +223,10 @@ def main():
             mlp_hidden_size=args.mlp_hidden_size,
             use_word_embedding=args.use_word_embedding,
             use_morph_embedding=args.use_morph_embedding,
-            embedding_dimension=args.embedding_dimension
+            embedding_dimension=args.embedding_dimension,
+            multi_label=args.multi_label,
+            min_label_freq=args.min_seq_occurence,
+            mlp_ensemble_size=args.mlp_ensamble_size
         )
         run_model(learning_model, learning_model.name,
                   train_sentences, dev_sentences_target,
