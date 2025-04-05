@@ -3,4 +3,3 @@ scikit-learn
 numpy
 fasttext
 requests
-urllib
