@@ -83,28 +83,48 @@ def parse_args():
     parser.add_argument("--classifier_type", type=str, default="mlp",
                         choices=["svm", "mlp", "lr"],
                         help="Classifier type: 'svm', 'mlp', or 'lr' (default: mlp).")
+    parser.add_argument("--mlp_ensemble_size", type=int, default=1,
+                        help="Number of MLP classifiers in an ensemble (default: 1).")
     parser.add_argument("--mlp_hidden_size", type=int, default=100,
                         help="Hidden layer size for MLP classifier (default: 100).")
-    parser.add_argument("--mlp_ensamble_size", type=int, default=1,
-                        help="Number of MLP classifiers in an ensamble (default: 1).")
+    parser.add_argument("--svm_c", type=float, default=1.0,
+                        help="C parameter for LinearSVC (default: 1.0).")
     parser.add_argument("--random_state", type=int, default=34867991,
                         help="Random seed for the MorphClassifier (default: 34867991).")
+
+    # Feature toggles
+    parser.add_argument("--disable_char_ngrams", action="store_true",
+                        help="Disable character n-gram features (by default they're ON).")
+    parser.add_argument("--char_ngram_min", type=int, default=1,
+                        help="Minimum n for character n-grams (default: 1).")
+    parser.add_argument("--char_ngram_max", type=int, default=2,
+                        help="Maximum n for character n-grams (default: 2).")
+
+    parser.add_argument("--disable_morph_type", action="store_true",
+                        help="Disable morph type as a one-hot encoded feature (default: it's ON).")
+    parser.add_argument("--disable_morph_position", action="store_true",
+                        help="Disable morph position as a one-hot encoded feature (default: it's ON).")
+
     parser.add_argument("--use_word_embedding", action="store_true",
-                        help="Use a word embedding feature in the MorphClassifier.")
+                        help="Use a word embedding feature in the MorphClassifier (default: off).")
     parser.add_argument("--use_morph_embedding", action="store_true",
-                        help="Use a morph embedding feature in the MorphClassifier.")
+                        help="Use a morph embedding feature in the MorphClassifier (default: off).")
     parser.add_argument("--embedding_dimension", type=int, default=300,
                         help="Embedding dimension if using embeddings (default: 300).")
+    parser.add_argument("--fasttext_model_path", type=str, default="cc.cs.300.bin",
+                        help="Path to the fastText .bin model (default: cc.cs.300.bin).")
+
     parser.add_argument("--multi_label", action="store_true",
-                        help="Enable multi_label classification. Instead of treating whole sequence as one label.")
+                        help="Enable multi_label classification. (default: False).")
     parser.add_argument("--extend_train", action="store_true",
                         help="Use root and affixes dictionaries as extension to training set.")
-    parser.add_argument("--min_seq_occurence", type=int, default=2,
-                        help="Minimal number of occurence for etymological sequence to keep that morphs in the train set.")
-    # other
-    parser.add_argument("--quiet",'-q', action="store_true",
-                        help="Disables printing of additional information like timing")
-    
+    parser.add_argument("--min_seq_occurrence", type=int, default=2,
+                        help="Minimal number of occurrences for an etymological sequence to keep that morph in the train set (default: 2).")
+    parser.add_argument("--keep_case", action="store_true",
+                        help="If True, keep (upper/lower) case of all morphs/words. If False convert all text to lowercase (default: False).")
+    parser.add_argument("--quiet", "-q", action="store_true",
+                        help="Disables printing of additional information like timing.")
+
     return parser.parse_args()
 
 def run_model(
@@ -227,17 +247,30 @@ def main():
                 # if the argument was kept on default set it to 1 (keep all sequences)
                 args.min_seq_occurence = 1
 
+        char_ngram_range = (args.char_ngram_min, args.char_ngram_max)
+
         learning_model = MorphClassifier(
             name=args.model_name,
             random_state=args.random_state,
             classifier_type=args.classifier_type,
+            mlp_ensemble_size=args.mlp_ensemble_size,
             mlp_hidden_size=args.mlp_hidden_size,
-            use_word_embedding=args.use_word_embedding,
-            use_morph_embedding=args.use_morph_embedding,
+            svm_c=args.svm_c,
+
+            use_char_ngrams=(not args.disable_char_ngrams),
+            char_ngram_range=char_ngram_range,
+            use_morph_type=(not args.disable_morph_type),
+            use_morph_position=(not args.disable_morph_position),
+            
+            fasttext_model_path=args.fasttext_model_path,
+            use_morph_embedding= args.use_morph_embedding,
+            use_word_embedding= args.use_word_embedding,
             embedding_dimension=args.embedding_dimension,
+
+            lower_case=(not args.keep_case),
+            verbose=(not args.quiet),
             multi_label=args.multi_label,
-            min_label_freq=args.min_seq_occurence,
-            mlp_ensemble_size=args.mlp_ensamble_size
+            min_label_freq=args.min_seq_occurrence
         )
         run_model(learning_model, learning_model.name,
                   train_sentences, dev_sentences_target,
