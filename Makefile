@@ -7,11 +7,11 @@ all: run
 
 # Check or create the virtual environment in 'myvenv', then install requirements
 myvenv:
-	@echo "Setting up virtual environment 'myvenv' if not existing..."
 	@if [ ! -d "myvenv" ]; then \
+	  echo "Setting up virtual environment 'myvenv'"; \
 	  python3 -m venv myvenv; \
+	  . myvenv/bin/activate && pip install -r requirements.txt; \
 	fi
-	@. myvenv/bin/activate && pip install -r requirements.txt
 
 # Run your main Python script using the myvenv environment
 run: myvenv
