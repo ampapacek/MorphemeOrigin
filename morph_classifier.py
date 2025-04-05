@@ -443,6 +443,7 @@ class MorphClassifier(Model):
         # Store both the pipeline and the ML binarizer (if present) together in a dict
         objects_to_save = {
             "pipeline": self.pipeline,
+            'fallback_pipeline': self.fallback_pipeline,
             "mlb": self._mlb
         }
 
@@ -462,6 +463,7 @@ class MorphClassifier(Model):
 
         self.pipeline = saved_data["pipeline"]
         self._mlb = saved_data["mlb"]
+        self.fallback_pipeline = saved_data["fallback_pipeline"]
 
         if self.verbose:
             print(f"Model loaded from {filename}")
