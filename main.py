@@ -243,9 +243,9 @@ def main():
             train_sentences += single_morph_sentences_from_dict(args.affixes_file)
         else:
             # if the train is not extended there is no need  to remove etym sequences with low frequency
-            if args.min_seq_occurence == 2:
+            if args.min_seq_occurrence == 2:
                 # if the argument was kept on default set it to 1 (keep all sequences)
-                args.min_seq_occurence = 1
+                args.min_seq_occurrence = 1
 
         char_ngram_range = (args.char_ngram_min, args.char_ngram_max)
 
