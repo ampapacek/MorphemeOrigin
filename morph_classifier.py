@@ -81,6 +81,11 @@ class MorphClassifier(Model):
     multi_label : bool
         If True, treats etymologies as multi-label sets. If False, treats 
         the comma-joined string as a single class label.
+   
+     fallback_single_label : bool
+        If True, train both single and multi label pipelines.
+        When the multilabel pipeline predicts empty sequence use the single label as fallback.
+        Used only when multi_label=True.
     """
 
     def __init__(
@@ -102,7 +107,9 @@ class MorphClassifier(Model):
         verbose: bool = True,
         lower_case: bool = True,
         multi_label: bool = False,
-        min_label_freq: int = 2
+        min_label_freq: int = 2,
+        fallback_single_label: bool = False
+
     ) -> None:
         super().__init__(name)
         if not name:
@@ -153,8 +160,9 @@ class MorphClassifier(Model):
 
         # Multi-label
         self.multi_label = multi_label
+        self.use_fallback_pipeline = fallback_single_label
         self._mlb: Optional[MultiLabelBinarizer] = None  # For multi-label binarizing
-
+        self.fallback_pipeline:Optional[Pipeline] = None
 
     def fit(self, data: List["DataSentence"]) -> None:
         """
@@ -302,12 +310,19 @@ class MorphClassifier(Model):
         # and do multi-label binarization for y.
         if self.multi_label:
             self._mlb = MultiLabelBinarizer()
-            # Convert the comma-separated string "AA,BB" to list ["AA", "BB"] for each row
+            # Convert the comma-separated string, for example "lat,ell" to list ["lat", "ell"]
             y_list = [label_str.split(",") for label_str in df["label"]]
             y_bin = self._mlb.fit_transform(y_list)
             final_classifier = OneVsRestClassifier(base_classifier)
+            
+            if self.use_fallback_pipeline: # prepare another pipeline single-label classifier in case of empty prediction
+                y_bin_fallback =  df["label"]
+                self.fallback_pipeline = Pipeline([
+                    ("preprocessor", preprocessor),
+                    ("classifier", base_classifier)
+        ])
         else:
-            # Single-label: use df["label"] as is
+            # Single-label: use the full label (whole sequence) as one class
             self._mlb = None
             y_bin = df["label"]
             final_classifier = base_classifier
@@ -331,7 +346,10 @@ class MorphClassifier(Model):
             elif classifier_type == "lr":
                 print("  Using LogisticRegression")
             if self.multi_label:
-                print("  multi_label=True (using OneVsRestClassifier)")
+                if self.use_fallback_pipeline:
+                    print("  multi_label=True (using OneVsRestClassifier), with fallback single-label pipeline")
+                else:
+                    print("  multi_label=True (using OneVsRestClassifier)")
             else:
                 print("  multi_label=False (single-label)")
 
@@ -342,6 +360,10 @@ class MorphClassifier(Model):
 
         # Fit the pipeline
         self.pipeline.fit(X, y_bin)
+        if self.use_fallback_pipeline and self.fallback_pipeline:
+            if self.verbose:
+                print("Fitting additional fallback pipeline...")
+            self.fallback_pipeline.fit(X,y_bin_fallback)
 
         if self.verbose:
             print(f"Training complete for model {self.name}")
@@ -392,6 +414,14 @@ class MorphClassifier(Model):
                             # label_list is something like [("AA", "BB")]
                             # Convert that to a Python list of strings
                             morph.etymology = list(label_list[0])  # the first (and only) row
+                            if morph.etymology == []:
+                                # The classifier returned an empty sequence
+                                if self.use_fallback_pipeline and self.fallback_pipeline:
+                                    # Use fallback single pipeline
+                                    morph.etymology = (self.fallback_pipeline.predict(df_morph)[0]).split(',')
+                                else:
+                                    # Predict ['ces']
+                                    morph.etymology = ['ces']
                         else:
                             # Single-label => pipeline outputs a single string
                             pred_label = self.pipeline.predict(df_morph)[0]
