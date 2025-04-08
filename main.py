@@ -92,10 +92,15 @@ def parse_args():
                         help="C parameter for LinearSVC (default: 1.0).")
     parser.add_argument("--random_state", type=int, default=34867991,
                         help="Random seed for the MorphClassifier (default: 34867991).")
+    
     parser.add_argument("--save_model_path", type=str, default="",
-                        help="Path where to save the trained model (default: empty => dont save model).")
+                        help="Path where to save the trained model. Automaticly enables loading. (default: empty => dont save model).")
     parser.add_argument("--load_model_path", type=str, default="",
-                        help="Path with the trained model for loading (default: empty => dont load model).")
+                        help="Path with the trained model for loading. Automaticly enables saving. (default: empty => dont load model).")
+    parser.add_argument("--save", action="store_true",
+                        help="If to save the trained model. If the path is not specified, model.name + .pkl is used.")
+    parser.add_argument("--load", action="store_true",
+                        help="If to load the trained model from file. If the path is not specified, model.name + .pkl is used.")
 
     # Feature toggles
     parser.add_argument("--disable_char_ngrams", action="store_true",
@@ -154,16 +159,17 @@ def run_model(
         mistakes_file (str): If set, logs mistakes to this file.
         load_model_path (str): Path to the trained and saved model. If None or empty train the model from data.
     """
+    start_time = time.time()
+    print(f"----- {model_name} -----")
     try:
-        print(f"----- {model_name} -----")
-        start_time = time.time()
-        if load_model_path != '':
+        if load_model_path:
             try:
                 model.load(load_model_path)
             except Exception as error:
                 print("Error when trying to load model from ", load_model_path)
                 print("The following error occured:", error)
-                print("Call without load_model_path to train the model instead")
+                print("Save the model firts or call without load_model_path to train the model instead")
+                raise error
         else:
             model.fit(train_data)
         # Remove targets from the data to simulate unlabeled data
@@ -189,11 +195,13 @@ def run_model(
     except WordDictModel.NetworkError as net_err:
         print(f"Network error while running model '{model_name}'.\nThe following exception occured: {net_err}")
         print()
+        raise net_err
     
     except Exception as e:
         print(f"Error when running model: '{model_name}'")
         print(f"The following exception occurred:\n    {e}\n")
         print()
+        raise e
 
 def main():
     args = parse_args()
@@ -292,10 +300,21 @@ def main():
             multi_label=args.multi_label,
             min_label_freq=args.min_seq_occurrence
         )
-        run_model(learning_model, learning_model.name,
-                  train_sentences, dev_sentences_target,
-                  baseline_f1, f"mistakes_{learning_model.name}.tsv",verbose=(not args.quiet),load_model_path=args.load_model_path)
-        if args.save_model_path:
-            learning_model.save(args.save_model_path)
+        if args.load:
+            args.load_model_path = learning_model.name + '.pkl'
+        try:
+            run_model(learning_model, learning_model.name,
+                    train_sentences, dev_sentences_target,
+                    baseline_f1, f"mistakes_{learning_model.name}.tsv",verbose=(not args.quiet),load_model_path=args.load_model_path)
+            if args.save_model_path:
+                learning_model.save(args.save_model_path)
+            elif args.save:
+                learning_model.save(learning_model.name + '.pkl')
+        # TODO: Make the excpetion handling better        
+        except Exception as e:
+            print("Terminating program after an error.")
+
+
+
 if __name__ == "__main__":
     main()
