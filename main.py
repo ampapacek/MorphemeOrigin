@@ -23,7 +23,8 @@ from utils import (
     remove_targets,
     write_morph_statistics,
     count_sentences_words_morphs,
-    single_morph_sentences_from_dict
+    single_morph_sentences_from_dict,
+    evaluate_f1_native_borrowed
 )
 from baselines import (
     DummyModel,
@@ -159,6 +160,8 @@ def run_model(
 
         # Evaluate
         f_score, accuracy = evaluate(predictions, target_data, mistakes_file)
+        f_score_micro,f_score_native,f_score_borrowed = evaluate_f1_native_borrowed(predictions,target_data)
+        f_score_micro_baseline = 50 # The dummy has 100 in native and 0 on borrowed
         improvement = relative_error_reduction(baseline_f1, f_score)
         if verbose:
             print(f"Predictions computed and evaluated. Total time {time.time()-start_time:.3f} s")
@@ -167,7 +170,8 @@ def run_model(
             print("Results:")
         print(f"F-score: {f_score:.3f} %, Accuracy: {accuracy:.3f} %")
         print(f"Relative Error Reduction: {improvement:.3f} %\n")
-
+        print(f"F-score native: {f_score_native:.3f} %, borrowed: {f_score_borrowed:.3f} %, combined (arithmetic mean): {f_score_micro:.3f} %\n")
+        print(f"Relative Error Reduction on micro F1-score: {relative_error_reduction(f_score_micro_baseline, f_score_micro):.3f} %\n")
     except WordDictModel.NetworkError as net_err:
         print(f"Network error while running model '{model_name}'.\nThe following exception occured: {net_err}")
         print()
@@ -192,18 +196,16 @@ def main():
     dev_sentences_target = load_annotations(args.target_file)
     # Load train data
     train_sentences = load_annotations(args.train_file)
-
-    write_morph_statistics(
-        dev_sentences_target, args.stats_lang_dev, args.stats_morphs_dev
-    )
+    
+    write_morph_statistics(dev_sentences_target, args.stats_lang_dev, args.stats_morphs_dev)
     sentence_count,word_count,morph_count = count_sentences_words_morphs(dev_sentences_target)
-    print(f"Statistics on Dev -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}\n")
+    if not args.quiet:
+        print(f"Statistics on Dev -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}\n")
 
-    write_morph_statistics(
-        train_sentences, args.stats_lang_train, args.stats_morphs_train
-    )
+    write_morph_statistics(train_sentences, args.stats_lang_train, args.stats_morphs_train)
     sentence_count,word_count,morph_count = count_sentences_words_morphs(train_sentences)
-    print(f"Statistics on Train -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}\n")
+    if not args.quiet:
+        print(f"Statistics on Train -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}\n")
 
     # Always run dummy internally for baseline
     dummy_model = DummyModel()
@@ -215,6 +217,7 @@ def main():
     if args.enable_dummy:
         print("----- Dummy Model (baseline) -----")
         print(f"F-score: {f_score_dummy:.3f} %, Accuracy: {accuracy_dummy:.3f} %\n")
+        print(f"F-score micro: {evaluate_f1_native_borrowed(dummy_predictions,dev_sentences_target)[0]:.3f}\n")
 
     if args.enable_mfo:
         mfo_model = MostFrequentOriginModel()
@@ -241,6 +244,9 @@ def main():
         if args.extend_train:
             train_sentences += single_morph_sentences_from_dict(args.root_etym_file)
             train_sentences += single_morph_sentences_from_dict(args.affixes_file)
+            write_morph_statistics(train_sentences,languages_file='lang_extended.tsv')
+            sentence_count,word_count,morph_count = count_sentences_words_morphs(train_sentences)
+            print(f"Statistics on extended train -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}\n")
         else:
             # if the train is not extended there is no need  to remove etym sequences with low frequency
             if args.min_seq_occurrence == 2:
@@ -275,7 +281,6 @@ def main():
         run_model(learning_model, learning_model.name,
                   train_sentences, dev_sentences_target,
                   baseline_f1, f"mistakes_{learning_model.name}.tsv",verbose=(not args.quiet))
-
 
 if __name__ == "__main__":
     main()
