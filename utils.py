@@ -596,3 +596,90 @@ def calculate_cohen_kappa(sentences1: List[DataSentence], sentences2: List[DataS
     kappa = (observed_agreement - expected_agreement) / (1 - expected_agreement)
     return kappa
 
+
+def evaluate_f1_native_borrowed(
+    sentences_prediction: List[DataSentence],
+    sentences_target: List[DataSentence],
+    file_mistakes: Optional[str] = None
+) -> float:
+    """
+    Evaluates etymology predictions by computing separate F1 scores for:
+      - Native morphs (those whose *target* etymology is exactly {"ces"}).
+      - Borrowed morphs (all others).
+    Then returns the average of these two F1 scores.
+
+    If file_mistakes is provided, logs mistakes to that file.
+    """
+
+    # Summations for computing average F1
+    native_f1_sum = 0.0
+    native_count = 0
+    borrowed_f1_sum = 0.0
+    borrowed_count = 0
+
+    # For logging mistakes
+    mistakes_f = open(file_mistakes, 'wt') if file_mistakes else None
+    if mistakes_f:
+        print("word\tmorph\tprediction\ttarget\tnative_or_borrowed", file=mistakes_f)
+
+    # Iterate over predicted & target sentences in parallel
+    for sent_pred, sent_tgt in zip(sentences_prediction, sentences_target):
+        # Ensure the top-level sentence text matches
+        assert sent_pred.sentence == sent_tgt.sentence, \
+            f"Sentence mismatch: {sent_pred.sentence} != {sent_tgt.sentence}"
+
+        for word_pred, word_tgt in zip(sent_pred.words, sent_tgt.words):
+            for morph_pred, morph_tgt in zip(word_pred, word_tgt):
+                assert morph_pred.text == morph_tgt.text, \
+                    f"Morph text mismatch: {morph_pred.text} != {morph_tgt.text}"
+
+                pred_set = set(morph_pred.etymology)
+                tgt_set = set(morph_tgt.etymology)
+
+                # Decide if we skip morphs with empty sets, or treat them as special
+                if not tgt_set and not pred_set:
+                    # Nothing to evaluate, skip
+                    continue
+
+                # Check if target is {"ces"} => "native" morph
+                is_native = (tgt_set == {"ces"})
+
+                # If target is empty, skip or treat it as borrowed:
+                if not tgt_set:
+                    # Possibly skip or treat as borrowed => up to you
+                    continue
+
+                # Compute F1 for this morph
+                intersection = pred_set.intersection(tgt_set)
+                precision = len(intersection) / len(pred_set) if pred_set else 0
+                recall = len(intersection) / len(tgt_set) if tgt_set else 0
+                denom = (precision + recall)
+                f1 = (2 * precision * recall / denom) if denom > 0 else 0.0
+
+                # Add to the correct bucket
+                if is_native:
+                    native_f1_sum += f1
+                    native_count += 1
+                else:
+                    borrowed_f1_sum += f1
+                    borrowed_count += 1
+
+                # If mismatch, log to mistakes file
+                if f1 != 1.0 and mistakes_f is not None:
+                    category = "native" if is_native else "borrowed"
+                    print(
+                        f"{word_tgt.text}\t{morph_tgt.text}\t{morph_pred.etymology}\t{morph_tgt.etymology}\t{category}",
+                        file=mistakes_f
+                    )
+
+    if mistakes_f:
+        mistakes_f.close()
+
+    # Compute average F1 for native & borrowed
+    # If there are no native or no borrowed morphs, treat that group’s F1 as 0 (or skip).
+    native_f1 = 100.0 *(native_f1_sum / native_count) if native_count > 0 else 0.0
+    borrowed_f1 = 100.0 *(borrowed_f1_sum / borrowed_count) if borrowed_count > 0 else 0.0
+
+    # Return the average of the two scores
+    final_fscore = (native_f1 + borrowed_f1) / 2.0
+    return final_fscore,native_f1,borrowed_f1
