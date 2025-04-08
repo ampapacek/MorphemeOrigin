@@ -201,7 +201,7 @@ def fill_classification(filepath: str, sentences: List[DataSentence]) ->List[Dat
             morph.morph_type = code_to_morph_type[code]
     return sentences
 
-def write_morph_statistics(target_sentences: List["DataSentence"], languages_file: str, morphs_file: str) -> None:
+def write_morph_statistics(target_sentences: List["DataSentence"], languages_file: str = None, morphs_file: str = None) -> None:
     """
     Computes morphological statistics from the given list of sentences and 
     writes them to the specified files for languages and morphs.
