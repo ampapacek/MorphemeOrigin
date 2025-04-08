@@ -92,6 +92,10 @@ def parse_args():
                         help="C parameter for LinearSVC (default: 1.0).")
     parser.add_argument("--random_state", type=int, default=34867991,
                         help="Random seed for the MorphClassifier (default: 34867991).")
+    parser.add_argument("--save_model_path", type=str, default="",
+                        help="Path where to save the trained model (default: empty => dont save model).")
+    parser.add_argument("--load_model_path", type=str, default="",
+                        help="Path with the trained model for loading (default: empty => dont load model).")
 
     # Feature toggles
     parser.add_argument("--disable_char_ngrams", action="store_true",
@@ -135,7 +139,8 @@ def run_model(
     target_data,
     baseline_f1: float,
     mistakes_file: str = None,
-    verbose:bool = True
+    verbose:bool = True,
+    load_model_path = ""
 ) -> None:
     """
     Fits (if applicable), predicts, evaluates, and prints results for a given model.
@@ -147,11 +152,20 @@ def run_model(
         target_data: The dev/test data with target labels.
         baseline_f1 (float): The baseline F1 score (dummy model).
         mistakes_file (str): If set, logs mistakes to this file.
+        load_model_path (str): Path to the trained and saved model. If None or empty train the model from data.
     """
     try:
         print(f"----- {model_name} -----")
         start_time = time.time()
-        model.fit(train_data)
+        if load_model_path != '':
+            try:
+                model.load(load_model_path)
+            except Exception as error:
+                print("Error when trying to load model from ", load_model_path)
+                print("The following error occured:", error)
+                print("Call without load_model_path to train the model instead")
+        else:
+            model.fit(train_data)
         # Remove targets from the data to simulate unlabeled data
         dev_data = remove_targets(target_data)
         if verbose:
@@ -280,7 +294,8 @@ def main():
         )
         run_model(learning_model, learning_model.name,
                   train_sentences, dev_sentences_target,
-                  baseline_f1, f"mistakes_{learning_model.name}.tsv",verbose=(not args.quiet))
-
+                  baseline_f1, f"mistakes_{learning_model.name}.tsv",verbose=(not args.quiet),load_model_path=args.load_model_path)
+        if args.save_model_path:
+            learning_model.save(args.save_model_path)
 if __name__ == "__main__":
     main()
