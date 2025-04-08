@@ -444,7 +444,9 @@ class MorphClassifier(Model):
         objects_to_save = {
             "pipeline": self.pipeline,
             'fallback_pipeline': self.fallback_pipeline,
-            "mlb": self._mlb
+            "mlb": self._mlb,
+            'name' :self.name,
+            'multi_label' : self.multi_label
         }
 
         with open(filename, "wb") as f:
@@ -464,6 +466,8 @@ class MorphClassifier(Model):
         self.pipeline = saved_data["pipeline"]
         self._mlb = saved_data["mlb"]
         self.fallback_pipeline = saved_data["fallback_pipeline"]
+        self.name = saved_data["name"]
+        self.multi_label = saved_data['multi_label']
 
         if self.verbose:
             print(f"Model loaded from {filename}")
