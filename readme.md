@@ -45,3 +45,40 @@ The main.py script supports various arguments to customize the experiment. To se
 ```bash
 python3 main.py --help
 ```
+
+## The Learning Model
+
+The primary machine learning model in this project is defined in `morph_classifier.py`. It offers a flexible pipeline, configured via command-line arguments when running with the script `main.py`:
+
+- **Classifier Type**  
+  Choose between:
+  - **SVM** (`--classifier_type svm`), controlled by the C parameter `--svm_c`.  
+  - **MLP** (`--classifier_type mlp`), optionally as an ensemble of MLPs via `--mlp_ensemble_size`. One hidden layer of size  `--mlp_hidden_size`, default to 100.
+  - **Logistic Regression** (`--classifier_type lr`).  
+
+- **Feature Extraction**  
+  - **Character n-grams** Used by default, disable by `--disable_char_ngrams`, with a customizable range (`--char_ngram_min`, `--char_ngram_max`).  
+  - **Morph Type** (Root/Derivational affix/Inflectional affix) On by default use `-disable_morph_type` to disable.
+  - **Morph Position** (Root/Prefix/Interfix/Suffix) On by default use `--disable_morph_position` to disable.
+  - **Embeddings** (fastText) for words and/or morphs (`--use_word_embedding`, `--use_morph_embedding`).  
+  - **Vowel Start End** Binary indicators for whether a morph starts/ends with a vowel. Disable by   `-disable_vowels`
+
+- **Multi-Label vs Single-Label**  
+  - By default, each etymology sequence is treated as a single label (e.g., "lat,ell").  
+  - With `--multi_label`, the sequence is split into separate labels (["lat", "ell"]) and for each language individually decides if it will be in the target or not.  The model uses a `MultiLabelBinarizer` + a `OneVsRestClassifier`.  
+  - **Fallback Single-Label**: If multi-label prediction fails (returns an empty set), you can optionally train a single-label pipeline in parallel by setting `--fallback_single_label`; the model then falls back to that pipeline if the multi-label pipeline yields no labels.
+
+- **Filtering Low-Frequency Labels**  
+  - Use `--min_seq_occurrence` to discard rare etymology sequences below a certain threshold of occurrences, cleaning up the training data. Example `--min_seq_occurrence=3` filters all sequences with occurences lower than 3.
+
+- **Case Normalization**  
+  - Control whether text is lowercased. Default is to lower the case of all text. Use `--keep_case` to disable this.
+
+- **Saving & Loading**  
+  - You can save the trained model to disk with `--save` which saves the trained model to file `model.name + '.pkl'`. To specify path where to save model use `--save_model_path`
+  - You can load the trained model to disk with `--load` which loads the trained model from file `model.name + '.pkl'`. To specify path from which to load the model use `--load_model_path`
+
+To see all available flags and parameters, run:
+```bash
+python main.py --help
+```
