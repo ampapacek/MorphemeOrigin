@@ -3,6 +3,7 @@ import gzip
 import shutil
 import sys
 import os
+import pandas as pd
 import numpy as np
 import fasttext
 import fasttext.util
@@ -134,3 +135,41 @@ class EmbeddingTransformer(BaseEstimator, TransformerMixin):
 
         if self.verbose:
             print(f"Decompressed and saved model to {self.fasttext_model_path}")
+
+
+class VowelConsonantTransformer(BaseEstimator, TransformerMixin):
+    """
+    A simple transformer that adds two binary features:
+      1) starts_with_vowel (0 or 1)
+      2) ends_with_vowel   (0 or 1)
+
+    By default, we define vowels as 'aeiouáéíóúý' etc. (customize as you wish).
+    """
+    def __init__(self, vowels: str = "aeiouyáéěíóůúý"):
+        self.vowels = vowels
+
+    def fit(self, X, y=None):
+        """Nothing to fit, just return self"""
+        return self
+
+    def transform(self, X):
+        """
+        Transforms input text to two dimension binary vector [starts_vowel, ends_vowel].
+        1 means it starts with a vowel, 0 that it starts with a consonant
+        X is expected to be a DataFrame or array with at least one column: "text"
+        """
+        vowels_set = set(self.vowels)
+        starts_ends = []
+        for text in X["text"]:
+            if not text:
+                # If it's empty or something else, default to 0,0
+                starts_ends.append([0,0])
+                continue
+            first = text[0]
+            last = text[-1]
+
+            starts_vowel = 1 if first.lower() in vowels_set else 0
+            ends_vowel = 1 if last.lower() in vowels_set else 0
+            starts_ends.append([starts_vowel, ends_vowel])
+        
+        return pd.DataFrame(starts_ends, columns=["starts_vowel", "ends_vowel"])
