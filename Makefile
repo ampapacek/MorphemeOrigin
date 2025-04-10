@@ -1,22 +1,24 @@
 # Makefile
 
-.PHONY: all run clean myvenv
+.PHONY: all run clean venv agreement
 
 # Default target: run the pipeline
 all: run
 
-# Check or create the virtual environment in 'myvenv', then install requirements
-myvenv:
-	@if [ ! -d "myvenv" ]; then \
-	  echo "Setting up virtual environment 'myvenv'"; \
-	  python3 -m venv myvenv; \
-	  . myvenv/bin/activate && pip install -r requirements.txt; \
+# Check or create the virtual environment, then install requirements
+venv:
+	@if [ -d "MorphOriginVenv" ]; then \
+	  . MorphOriginVenv/bin/activate; \
+	else \
+	  echo "Setting up virtual environment 'MorphOriginVenv'"; \
+	  python3 -m venv MorphOriginVenv; \
+	  . MorphOriginVenv/bin/activate && pip install -r requirements.txt; \
 	fi
 
-# Run your main Python script using the myvenv environment
-run: myvenv
+# Run the main Python script using the MorphOriginVenv environment
+run: venv
 	@echo "Running Morph Etymology evaluation..."
-	@. myvenv/bin/activate && python main.py --enable_all
+	@. MorphOriginVenv/bin/activate && python main.py --enable_all
 
 # Remove generated .tsv files
 clean:
