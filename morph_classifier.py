@@ -15,7 +15,8 @@ from sklearn.multiclass import OneVsRestClassifier
 
 from model import Model
 from data_sentece import DataSentence
-from embedding_transformer import EmbeddingTransformer
+from data_transformers import EmbeddingTransformer, VowelStartEndTransformer
+
 
 
 class MorphClassifier(Model):
@@ -108,7 +109,8 @@ class MorphClassifier(Model):
         lower_case: bool = True,
         multi_label: bool = False,
         min_label_freq: int = 2,
-        fallback_single_label: bool = False
+        fallback_single_label: bool = False,
+        use_vowel_consonant_feats: bool = True
 
     ) -> None:
         super().__init__(name)
@@ -148,6 +150,7 @@ class MorphClassifier(Model):
         self.use_morph_position = use_morph_position
         self.use_morph_embedding = use_morph_embedding
         self.use_word_embedding = use_word_embedding
+        self.use_vowel_consonant_feats = use_vowel_consonant_feats 
 
         # Embedding params
         self.embedding_dimension = embedding_dimension
@@ -257,6 +260,13 @@ class MorphClassifier(Model):
                     embedding_dim=self.embedding_dimension,
                     fasttext_model_path=self.fasttext_model_path
                 ),
+                ["text"]
+            ))
+
+        if self.use_vowel_consonant_feats:
+            transformers.append((
+                "vowel_consonant_feats",
+                VowelStartEndTransformer(),
                 ["text"]
             ))
 
