@@ -114,6 +114,8 @@ def parse_args():
                         help="Disable morph type as a one-hot encoded feature (default: it's ON).")
     parser.add_argument("--disable_morph_position", action="store_true",
                         help="Disable morph position as a one-hot encoded feature (default: it's ON).")
+    parser.add_argument("--disable_vowels", action="store_true",
+                        help="Disable use of vowel features. If the morph text starts and end with a vowel (default: it's ON).")
 
     parser.add_argument("--use_word_embedding", action="store_true",
                         help="Use a word embedding feature in the MorphClassifier (default: off).")
@@ -218,7 +220,7 @@ def main():
     dev_sentences_target = load_annotations(args.target_file)
     # Load train data
     train_sentences = load_annotations(args.train_file)
-    
+
     write_morph_statistics(dev_sentences_target, args.stats_lang_dev, args.stats_morphs_dev)
     sentence_count,word_count,morph_count = count_sentences_words_morphs(dev_sentences_target)
     if not args.quiet:
@@ -289,7 +291,8 @@ def main():
             char_ngram_range=char_ngram_range,
             use_morph_type=(not args.disable_morph_type),
             use_morph_position=(not args.disable_morph_position),
-            
+            use_vowel_start_end_features=(not args.disable_vowels),
+
             fasttext_model_path=args.fasttext_model_path,
             use_morph_embedding= args.use_morph_embedding,
             use_word_embedding= args.use_word_embedding,
