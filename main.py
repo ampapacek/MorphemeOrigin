@@ -24,7 +24,7 @@ from utils import (
     write_morph_statistics,
     count_sentences_words_morphs,
     single_morph_sentences_from_dict,
-    evaluate_f1_native_borrowed
+    evaluate_combined
 )
 from baselines import (
     DummyModel,
@@ -181,19 +181,20 @@ def run_model(
         predictions = model.predict(dev_data)
 
         # Evaluate
-        f_score, accuracy = evaluate(predictions, target_data, mistakes_file)
-        f_score_micro,f_score_native,f_score_borrowed = evaluate_f1_native_borrowed(predictions,target_data)
-        f_score_micro_baseline = 50 # The dummy has 100 in native and 0 on borrowed
+        evaluation_results = evaluate_combined(predictions, target_data, standard_eval=True,native_borrowed_eval=True,group_by_text_eval=True, file_mistakes=mistakes_file)
+        f_score = evaluation_results['standard_fscore']
+        f_score_native = evaluation_results['native_f1']
+        f_score_borrowed = evaluation_results['borrowed_f1']
+        f_score_grouped = evaluation_results['grouped_fscore']
         improvement = relative_error_reduction(baseline_f1, f_score)
         if verbose:
             print(f"Predictions computed and evaluated. Total time {time.time()-start_time:.3f} s")
         if verbose:
             print()
             print("Results:")
-        print(f"F-score: {f_score:.3f} %, Accuracy: {accuracy:.3f} %")
-        print(f"Relative Error Reduction: {improvement:.3f} %\n")
-        print(f"F-score native: {f_score_native:.3f} %, borrowed: {f_score_borrowed:.3f} %, combined (arithmetic mean): {f_score_micro:.3f} %\n")
-        print(f"Relative Error Reduction on micro F1-score: {relative_error_reduction(f_score_micro_baseline, f_score_micro):.3f} %\n")
+        print(f"Standard macro F-score: {f_score:.3f} %")
+        print(f"F-score: native: {f_score_native:.3f} %, borrowed: {f_score_borrowed:.3f} %, grouped by unique morphs: {f_score_grouped:.3f} %")
+        print(f"Relative Error Reduction over dummy baseline on standard F-score: {improvement:.3f} %\n")
     except WordDictModel.NetworkError as net_err:
         print(f"Network error while running model '{model_name}'.\nThe following exception occured: {net_err}")
         print()
@@ -207,7 +208,7 @@ def run_model(
 
 def main():
     args = parse_args()
-
+    args.enable_morph_classifier = True
     # If user wants --enable_all, set all toggles to True
     if args.enable_all:
         args.enable_dummy = True
@@ -235,13 +236,21 @@ def main():
     dummy_model = DummyModel()
     dev_dummy = remove_targets(dev_sentences_target)
     dummy_predictions = dummy_model.predict(dev_dummy)
-    f_score_dummy, accuracy_dummy = evaluate(dummy_predictions, dev_sentences_target)
-    baseline_f1 = f_score_dummy
 
     if args.enable_dummy:
+        evaluation_results = evaluate_combined(dummy_predictions, dev_sentences_target, standard_eval=True,native_borrowed_eval=True,group_by_text_eval=True)
+        f_score_dummy = evaluation_results['standard_fscore']
+        f_score_native = evaluation_results['native_f1']
+        f_score_borrowed = evaluation_results['borrowed_f1']
+        f_score_grouped = evaluation_results['grouped_fscore']
         print("----- Dummy Model (baseline) -----")
-        print(f"F-score: {f_score_dummy:.3f} %, Accuracy: {accuracy_dummy:.3f} %\n")
-        print(f"F-score micro: {evaluate_f1_native_borrowed(dummy_predictions,dev_sentences_target)[0]:.3f}\n")
+        print(f"F-score: {f_score_dummy:.3f} %\n")
+        print(f"Grouped by unique morphs: {f_score_grouped:.3f} %")
+        print(f"F-score Native {f_score_native:.3f} %, Borrowed: {f_score_borrowed:.3f} %\n")
+    else:
+        evaluation_results = evaluate_combined(dummy_predictions, dev_sentences_target, standard_eval=True,native_borrowed_eval=False,group_by_text_eval=False)
+        f_score_dummy = evaluation_results['standard_fscore']
+    baseline_f1 = f_score_dummy
 
     if args.enable_mfo:
         mfo_model = MostFrequentOriginModel()
