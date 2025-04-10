@@ -110,7 +110,7 @@ class MorphClassifier(Model):
         multi_label: bool = False,
         min_label_freq: int = 2,
         fallback_single_label: bool = False,
-        use_vowel_consonant_feats: bool = True
+        use_vowel_start_end_features: bool = True
 
     ) -> None:
         super().__init__(name)
@@ -150,7 +150,7 @@ class MorphClassifier(Model):
         self.use_morph_position = use_morph_position
         self.use_morph_embedding = use_morph_embedding
         self.use_word_embedding = use_word_embedding
-        self.use_vowel_consonant_feats = use_vowel_consonant_feats 
+        self.use_vowel_start_end_features = use_vowel_start_end_features 
 
         # Embedding params
         self.embedding_dimension = embedding_dimension
@@ -263,9 +263,9 @@ class MorphClassifier(Model):
                 ["text"]
             ))
 
-        if self.use_vowel_consonant_feats:
+        if self.use_vowel_start_end_features:
             transformers.append((
-                "vowel_consonant_feats",
+                "vowel_start_end_features",
                 VowelStartEndTransformer(),
                 ["text"]
             ))
