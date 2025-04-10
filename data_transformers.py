@@ -137,7 +137,7 @@ class EmbeddingTransformer(BaseEstimator, TransformerMixin):
             print(f"Decompressed and saved model to {self.fasttext_model_path}")
 
 
-class VowelConsonantTransformer(BaseEstimator, TransformerMixin):
+class VowelStartEndTransformer(BaseEstimator, TransformerMixin):
     """
     A simple transformer that adds two binary features:
       1) starts_with_vowel (0 or 1)
