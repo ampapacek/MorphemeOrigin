@@ -98,9 +98,10 @@ We provide four baseline models (see `baselines.py`), each offering a contrastin
 
 ## Evaluation
 
-Our primary evaluation computes an **F1 score** for each morph’s predicted vs. target etymology sets, then averages them (macro-average). Additionally:
+Our primary evaluation computes an **F1 score** for each morph’s predicted vs. target etymology sets, then averages them (over all morphs). Additionally:
 
 - **Mistakes** can be logged to a file (with columns: word, morph, predicted, target).
   
 - Also report variant where we split evaluation by categories (e.g. “native” vs. “borrowed”) and return separate F1 scores and average of those two.
-- Report realtive error reduction from the dummy baseline (always predict Czech)
+- Report realtive error reduction of the standart F-score from the dummy baseline (always predict Czech)
+- Report F-score grouped by morph text. Group all morphs with the same text and calculate the average F-score for each group and the average over all groups.
