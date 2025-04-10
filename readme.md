@@ -46,7 +46,7 @@ The main.py script supports various arguments to customize the experiment. To se
 python3 main.py --help
 ```
 
-## The Learning Model
+## Arguments
 
 The primary machine learning model in this project is defined in `morph_classifier.py`. It offers a flexible pipeline, configured via command-line arguments when running with the script `main.py`:
 
@@ -82,3 +82,25 @@ To see all available flags and parameters, run:
 ```bash
 python main.py --help
 ```
+
+### Baseline Models
+
+We provide four baseline models (see `baselines.py`), each offering a contrasting approach:
+
+1. **DummyModel**  
+   Always predicts `["ces"]` for any alphabetic morph. Useful as a minimal baseline.
+2. **MostFrequentOriginModel**  
+   Remembers the most frequent etymology sequence for each morph (from training); defaults to `["ces"]` if unseen.
+3. **MorphDictModel**  
+   Uses root+affix dictionaries to label morphemes if found, falling back to `["ces"]`.
+4. **WordDictModel**  
+   Analyzes the entire word’s lemma (via MorphoDiTa) and assigns the word-level etymology from a dictionary, plus affixes.
+
+## Evaluation
+
+Our primary evaluation computes an **F1 score** for each morph’s predicted vs. target etymology sets, then averages them (macro-average). Additionally:
+
+- **Mistakes** can be logged to a file (with columns: word, morph, predicted, target).
+  
+- Also report variant where we split evaluation by categories (e.g. “native” vs. “borrowed”) and return separate F1 scores and average of those two.
+- Report realtive error reduction from the dummy baseline (always predict Czech)
