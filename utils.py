@@ -607,9 +607,8 @@ def evaluate_f1_native_borrowed(
       - Native morphs (those whose target etymology is exactly {"ces"}).
       - Borrowed morphs (all others).
 
-    Returns the average of these two F1 scores, along with the individual F1 for native
-    and borrowed. If there are no native or no borrowed morphs, that group's F1 is treated
-    as 100%.
+    Returns the individual F1 for native and borrowed.
+    If there are no native or no borrowed morphs, that group's F1 is treated as 100%.
 
     Args:
         sentences_prediction: The list of predicted DataSentence objects.
@@ -619,7 +618,6 @@ def evaluate_f1_native_borrowed(
                                   and whether the morph is native or borrowed.
 
     Returns:
-        final_fscore: The average (in %) of the native and borrowed F1 scores.
         native_f1: The native F1 (in %).
         borrowed_f1: The borrowed F1 (in %).
     """
@@ -686,6 +684,4 @@ def evaluate_f1_native_borrowed(
     native_f1 = 100.0 * (native_f1_sum / native_count) if native_count > 0 else 100.0
     borrowed_f1 = 100.0 * (borrowed_f1_sum / borrowed_count) if borrowed_count > 0 else 100.0
 
-    # Average them
-    final_fscore = (native_f1 + borrowed_f1) / 2.0
-    return final_fscore, native_f1, borrowed_f1
+    return native_f1, borrowed_f1
