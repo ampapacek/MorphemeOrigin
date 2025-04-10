@@ -9,7 +9,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.preprocessing import OneHotEncoder, MultiLabelBinarizer
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import VotingClassifier
-from sklearn.svm import LinearSVC
+from sklearn.svm import LinearSVC,SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 
@@ -275,7 +275,7 @@ class MorphClassifier(Model):
         # Choose the base classifier based on user selection
         classifier_type = self.classifier_type.lower()
         if classifier_type == "svm":
-            base_classifier = LinearSVC(
+            base_classifier = SVC(
                 C=self.svm_c,
                 max_iter=5000,
                 random_state=self.random_state,
