@@ -276,10 +276,10 @@ class MorphClassifier(Model):
         classifier_type = self.classifier_type.lower()
         if classifier_type == "svm":
             base_classifier = SVC(
+                kernel='rbf',
                 C=self.svm_c,
                 max_iter=5000,
-                random_state=self.random_state,
-                verbose=0
+                random_state=self.random_state
             )
         elif classifier_type == "mlp":
             # If ensemble_size <= 1, single MLP; else a VotingClassifier
