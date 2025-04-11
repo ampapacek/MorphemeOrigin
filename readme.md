@@ -40,13 +40,25 @@ To clean up generated files, use:
 make clean
 ```
 
-## Running main.py with Arguments
-The main.py script supports various arguments to customize the experiment. To see all available options, use:
-```bash
-python3 main.py --help
-```
+## Running `main.py` with Arguments
 
-## Arguments
+If you want to set up arguments and run `main.py` directly (i.e., outside of `make run`):
+
+1. **Create/Update the Virtual Environment:**
+```bash
+make venv
+```
+2. **Activate the Virtual Environment:**
+```bash
+source MorphOriginVenv/bin/activate
+```
+3. **Run the script with custom arguments:**
+Example:
+```bash
+python3 main.py --enable_all --extend_train --multi_label --mlp_hidden_size=30
+```
+   
+## Arguments description
 
 The primary machine learning model in this project is defined in `morph_classifier.py`. It offers a flexible pipeline, configured via command-line arguments when running with the script `main.py`:
 
@@ -68,7 +80,8 @@ The primary machine learning model in this project is defined in `morph_classifi
   - With `--multi_label`, the sequence is split into separate labels (["lat", "ell"]) and for each language individually decides if it will be in the target or not.  The model uses a `MultiLabelBinarizer` + a `OneVsRestClassifier`.  
   - **Fallback Single-Label**: If multi-label prediction fails (returns an empty set), you can optionally train a single-label pipeline in parallel by setting `--fallback_single_label`; the model then falls back to that pipeline if the multi-label pipeline yields no labels.
 
-- **Filtering Low-Frequency Labels**  
+- **Extending train set and Filtering Low-Frequency Labels**  
+  - To extend the train set using the roots and affixes dictionaries use `--extend_train`.   It increases the training set by adding single-morph sentences from the provided roots and affixes dictionaries. It significantly expands the amount of training data, the quality may not match the regular annotated set.
   - Use `--min_seq_occurrence` to discard rare etymology sequences below a certain threshold of occurrences, cleaning up the training data. Example `--min_seq_occurrence=3` filters all sequences with occurences lower than 3.
 
 - **Case Normalization**  
@@ -80,7 +93,7 @@ The primary machine learning model in this project is defined in `morph_classifi
 
 To see all available flags and parameters, run:
 ```bash
-python main.py --help
+python3 main.py --help
 ```
 
 ### Baseline Models
