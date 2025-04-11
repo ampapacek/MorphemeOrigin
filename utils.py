@@ -276,93 +276,6 @@ def split(data: List, ratio: float = 0.2, random_seed:int = None) -> Tuple[List[
     split_index = int(len(data_copy) * (1 - ratio))
     return data_copy[:split_index], data_copy[split_index:]
 
-def evaluate(sentences_prediction: List[DataSentence],
-             sentences_target: List[DataSentence],
-             file_mistakes: str = None) -> tuple[float,float]:
-    """
-    Evaluates etymology predictions by computing the average F1 score for each morph.
-    
-    For each morph, the etymology lists are converted to sets. Precision, recall,
-    and F1 are computed based on the intersection of these sets.
-    
-    The function asserts that the computed sentence strings and morph texts match 
-    between predictions and targets.
-    
-    Optionally, if a file path is provided, it writes mistakes (where the prediction 
-    is not fully correct) to that file. The output file has a header and contains 
-    the word text, morph text, predicted etymology, and target etymology.
-    
-    Args:
-        sentences_prediction (List[DataSentence]): List of predicted sentences.
-        sentences_target (List[DataSentence]): List of target sentences.
-        file_mistakes (str, optional): Path to a file where mistakes will be logged.
-                                       If None, no mistakes are logged.
-    
-    Returns:
-        float: The average F1 score over all evaluated morphs.
-    """
-    total_f1 = 0.0  # Sum of F1 scores for each morph.
-    morph_count = 0  # Total number of evaluated morphs.
-    mistakes_count = 0  # Total number of incorrect words
-
-    # Open the mistakes file if a path is provided.
-    mistakes_f = open(file_mistakes, 'wt') if file_mistakes else None
-    if mistakes_f:
-        print("word\tmorph\tprediction\ttarget", file=mistakes_f)
-    
-    # Iterate over corresponding predicted and target sentences.
-    for sentence_pred, sentence_tgt in zip(sentences_prediction, sentences_target):
-        # Ensure the computed sentence strings match.
-        assert sentence_pred.sentence == sentence_tgt.sentence, \
-            f"Sentence mismatch: {sentence_pred.sentence} != {sentence_tgt.sentence}"
-        
-        # Iterate over corresponding words.
-        for word_pred, word_tgt in zip(sentence_pred.words, sentence_tgt.words):
-            # Iterate over corresponding morphs.
-            for morph_pred, morph_tgt in zip(word_pred, word_tgt):
-                # Ensure that the morph texts match.
-                assert morph_pred.text == morph_tgt.text, \
-                    f"Morph text mismatch: {morph_pred.text} != {morph_tgt.text}"
-                
-                # Convert etymology lists to sets for evaluation.
-                pred_set = set(morph_pred.etymology)
-                tgt_set = set(morph_tgt.etymology)
-                
-                # Skip evaluation for morphs with empty etymology (e.g., punctuation or numbers).
-                if not pred_set and not tgt_set:
-                    continue
-                    # optionally could treat this as correct prediction, i.e. insted of continue use f1 = 1
-
-                if not tgt_set:
-                    # Skip evaluation if the target etymology is empty. (e.g., punctuation or numbers or abbrevations)
-                    # optionally could be considered as a mistake that the model didnt predict [] # empty etymology
-                    continue
-                else:
-                    # Compute intersection and calculate precision, recall, and F1.
-                    intersection = pred_set.intersection(tgt_set)
-                    precision = len(intersection) / len(pred_set) if pred_set else 0
-                    recall = len(intersection) / len(tgt_set) if tgt_set else 0
-                    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
-                    
-                    # If the prediction is not fully correct, log the mistake.
-                    if f1 != 1:
-                        mistakes_count += 1
-                        if mistakes_f is not None:
-                            print(f"{word_tgt.text}\t{morph_tgt.text}\t{morph_pred.etymology}\t{morph_tgt.etymology}",
-                              file=mistakes_f)
-                
-                total_f1 += f1
-                morph_count += 1
-    
-    # Close the mistakes file if it was opened.
-    if mistakes_f is not None:
-        mistakes_f.close()
-    
-    f_score_percentage = 100 * total_f1 / morph_count if morph_count > 0 else 0.0
-    percentage_correct = 100 * (morph_count - mistakes_count) / morph_count if morph_count > 0 else 0.0
-
-    return f_score_percentage, percentage_correct
-
 def relative_error_reduction(baseline_f1: float, new_f1: float) -> float:
     """
     Calculate the relative error reduction improvement metric on a 0–100 scale.
@@ -596,10 +509,10 @@ def calculate_cohen_kappa(sentences1: List[DataSentence], sentences2: List[DataS
     kappa = (observed_agreement - expected_agreement) / (1 - expected_agreement)
     return kappa
 
-def evaluate_combined(
+def evaluate(
     sentences_prediction: List["DataSentence"],
     sentences_target: List["DataSentence"],
-    standard_eval: bool = False,
+    standard_eval: bool = True,
     native_borrowed_eval: bool = False,
     group_by_text_eval: bool = False,
     file_mistakes: Optional[str] = None
@@ -607,16 +520,17 @@ def evaluate_combined(
     """
     Performs the evaluation, collecting metrics in three possible ways:
     
-    1) Standard (macro) F1 across all morphs + % correct morphs
-       - Enabled by standard_eval=True
-    2) Native vs. Borrowed F1 (target = {"ces"} vs. otherwise)
+    1) Standard (macro) F1 across all morphs + percentage of fully correct morphs
+       - Enabled by standard_eval=True, default = True
+    2) Native vs. Borrowed F1 (target = {"ces"} vs. otherwise). Compute separately for native and for borrowed.
        - Enabled by native_borrowed_eval=True
-    3) Group by `morph.text`, average F1 per text, then average across texts
+    3) Group by `morph.text`, average F1 per unique morphs (just by text) and compute the average score in each group,
+        then average across all groups (unique morphs).
        - Enabled by group_by_text_eval=True
 
     The function returns a dictionary whose keys depend on which evaluations are enabled.
     Example keys:
-      "standard_fscore", "standard_accuracy",
+      "f1score", "accuracy",
       "native_f1", "borrowed_f1",
       "grouped_fscore".
 
@@ -625,8 +539,8 @@ def evaluate_combined(
     Returns:
         A dictionary with any requested metrics:
           {
-            "standard_fscore": float,
-            "standard_accuracy": float,
+            "f1score": float,
+            "accuracy": float,
             "native_f1": float,
             "borrowed_f1": float,
             "grouped_fscore": float,
@@ -717,8 +631,8 @@ def evaluate_combined(
     if standard_eval and morph_count > 0:
         standard_fscore = 100.0 * total_f1_sum / morph_count
         standard_accuracy = 100.0 * (morph_count - mistakes_count) / morph_count
-        results["standard_fscore"] = standard_fscore
-        results["standard_accuracy"] = standard_accuracy
+        results["f1score"] = standard_fscore
+        results["accuracy"] = standard_accuracy
 
     # (2) Compute native vs borrowed if needed
     if native_borrowed_eval:
