@@ -259,7 +259,7 @@ def main():
         f_score_dummy = evaluation_results['f1score']
     baseline_f1 = f_score_dummy
 
-    if args.enable_mfo:
+    if args.enable_mfo or args.enable_baselines or args.enable_all:
         mfo_model = MostFrequentOriginModel()
         mistakes_file = None
         if args.print_mistakes:
