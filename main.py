@@ -62,7 +62,13 @@ def parse_args():
                         help="File to store language stats for train (default: languages_train_stats.tsv)")
     parser.add_argument("--stats_morphs_train", type=str, default="morphs_train_stats.tsv",
                         help="File to store morph stats for train (default: morphs_train_stats.tsv)")
+    parser.add_argument("--mistakes_file", type=str, default=None,
+                        help="File to print mistakes of the learning model (default: None => 'mistakes' + model.name + '.tsv")
 
+    parser.add_argument("--print_stats", action="store_true",
+                        help="Print statistics for morphs and language sequences in both the train and test sets. (default: False)")
+    parser.add_argument("--print_mistakes", action="store_true",
+                        help="Print mistakes made by the models on test set. (default: False)")
     # Model toggles
     parser.add_argument("--enable_dummy", action="store_true",
                         help="Print results for the dummy model. (Always run internally for baseline; prints only if True.)")
@@ -75,7 +81,9 @@ def parse_args():
     parser.add_argument("--enable_morph_classifier", action="store_true",
                         help="Enable MorphClassifier evaluation.")
     parser.add_argument("--enable_all", action="store_true",
-                        help="Enable all baseline models plus the MorphClassifier (unless toggles are overridden).")
+                        help="Enable all baseline models plus the learning model MorphClassifier.")
+    parser.add_argument("--enable_baselines", action="store_true",
+                        help="Enable all baseline models.")
 
     # Morph Classifier config
     parser.add_argument("--model_name", type=str, default=None,
@@ -140,11 +148,11 @@ def parse_args():
 
 def run_model(
     model: Model,
-    model_name: str,
     train_data,
     target_data,
-    baseline_f1: float,
-    mistakes_file: str = None,
+    baseline_f1: float = 0,
+    file_mistakes: str = None,
+    model_name: str = None,
     verbose:bool = True,
     load_model_path = ""
 ) -> None:
@@ -153,14 +161,16 @@ def run_model(
 
     Args:
         model (Model): The model to run.
-        model_name (str): A name/description for printing.
         train_data: The training data (list of DataSentence).
         target_data: The dev/test data with target labels.
-        baseline_f1 (float): The baseline F1 score (dummy model).
+        baseline_f1 (float): The baseline F1 score for relative error computation. If it is not provided skip relative error computation.
         mistakes_file (str): If set, logs mistakes to this file.
+        model_name (str): A name/description for printing.
+        verbose (bool): Enable verbose output.
         load_model_path (str): Path to the trained and saved model. If None or empty train the model from data.
     """
     start_time = time.time()
+    if model_name == None: model_name = model.name
     print(f"----- {model_name} -----")
     try:
         if load_model_path:
@@ -180,12 +190,14 @@ def run_model(
         predictions = model.predict(dev_data)
 
         # Evaluate
-        evaluation_results = evaluate(predictions, target_data, standard_eval=True,native_borrowed_eval=True,group_by_text_eval=True, file_mistakes=mistakes_file)
+        evaluation_results = evaluate(predictions, target_data, standard_eval=True,native_borrowed_eval=True,group_by_text_eval=True, file_mistakes=file_mistakes)
         f_score = evaluation_results['f1score']
         f_score_native = evaluation_results['native_f1']
         f_score_borrowed = evaluation_results['borrowed_f1']
         f_score_grouped = evaluation_results['grouped_fscore']
-        improvement = relative_error_reduction(baseline_f1, f_score)
+        improvement = None
+        if baseline_f1 and baseline_f1 > 0:
+            improvement = relative_error_reduction(baseline_f1, f_score)
         if verbose:
             print(f"Predictions computed and evaluated. Total time {time.time()-start_time:.3f} s")
         if verbose:
@@ -193,7 +205,8 @@ def run_model(
             print("Results:")
         print(f"Standard macro F-score: {f_score:.3f} %")
         print(f"F-score: native: {f_score_native:.3f} %, borrowed: {f_score_borrowed:.3f} %, grouped by unique morphs: {f_score_grouped:.3f} %")
-        print(f"Relative Error Reduction over dummy baseline on standard F-score: {improvement:.3f} %\n")
+        if improvement:
+            print(f"Relative Error Reduction over dummy baseline on standard F-score: {improvement:.3f} %\n")
     except WordDictModel.NetworkError as net_err:
         print(f"Network error while running model '{model_name}'.\nThe following exception occured: {net_err}")
         print()
@@ -207,28 +220,20 @@ def run_model(
 
 def main():
     args = parse_args()
-    args.enable_morph_classifier = True
-    # If user wants --enable_all, set all toggles to True
-    if args.enable_all:
-        args.enable_dummy = True
-        args.enable_mfo = True
-        args.enable_morph_dict = True
-        args.enable_word_dict = True
-        args.enable_morph_classifier = True
 
     # Load dev/test data
     dev_sentences_target = load_annotations(args.target_file)
     # Load train data
     train_sentences = load_annotations(args.train_file)
-
-    write_morph_statistics(dev_sentences_target, args.stats_lang_dev, args.stats_morphs_dev)
     sentence_count,word_count,morph_count = count_sentences_words_morphs(dev_sentences_target)
-    if not args.quiet:
-        print(f"Statistics on Dev -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}\n")
-
-    write_morph_statistics(train_sentences, args.stats_lang_train, args.stats_morphs_train)
     sentence_count,word_count,morph_count = count_sentences_words_morphs(train_sentences)
+
+    if args.print_stats:
+        write_morph_statistics(dev_sentences_target, args.stats_lang_dev, args.stats_morphs_dev)
+        write_morph_statistics(train_sentences, args.stats_lang_train, args.stats_morphs_train)
+
     if not args.quiet:
+        print(f"\nStatistics on Dev -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}")
         print(f"Statistics on Train -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}\n")
 
     # Always run dummy internally for baseline
@@ -236,14 +241,17 @@ def main():
     dev_dummy = remove_targets(dev_sentences_target)
     dummy_predictions = dummy_model.predict(dev_dummy)
 
-    if args.enable_dummy:
-        evaluation_results = evaluate(dummy_predictions, dev_sentences_target, standard_eval=True,native_borrowed_eval=True,group_by_text_eval=True)
+    if args.enable_dummy or args.enable_baselines or args.enable_all:
+        mistakes_file = None
+        if args.print_mistakes:
+            mistakes_file = f"mistakes_{dummy_model.name}.tsv"
+        evaluation_results = evaluate(dummy_predictions, dev_sentences_target, standard_eval=True,native_borrowed_eval=True,group_by_text_eval=True,file_mistakes=mistakes_file)
         f_score_dummy = evaluation_results['f1score']
         f_score_native = evaluation_results['native_f1']
         f_score_borrowed = evaluation_results['borrowed_f1']
         f_score_grouped = evaluation_results['grouped_fscore']
         print("----- Dummy Model (baseline) -----")
-        print(f"F-score: {f_score_dummy:.3f} %\n")
+        print(f"F-score: {f_score_dummy:.3f} %")
         print(f"Grouped by unique morphs: {f_score_grouped:.3f} %")
         print(f"F-score Native {f_score_native:.3f} %, Borrowed: {f_score_borrowed:.3f} %\n")
     else:
@@ -253,30 +261,37 @@ def main():
 
     if args.enable_mfo:
         mfo_model = MostFrequentOriginModel()
-        run_model(mfo_model, mfo_model.name,
-                  train_sentences, dev_sentences_target,
-                  baseline_f1, f"mistakes_{mfo_model.name}.tsv",verbose=(not args.quiet))
+        mistakes_file = None
+        if args.print_mistakes:
+            mistakes_file = f"mistakes_{mfo_model.name}.tsv"
+        run_model(mfo_model, train_sentences, dev_sentences_target,
+                  baseline_f1=baseline_f1, file_mistakes=mistakes_file,verbose=(not args.quiet))
 
     # Possibly run MorphDictModel
-    if args.enable_morph_dict:
+    if args.enable_morph_dict or args.enable_baselines or args.enable_all:
         md_model = MorphDictModel(args.root_etym_file, args.affixes_file)
-        run_model(md_model, md_model.name,
-                  train_sentences, dev_sentences_target,
-                  baseline_f1, f"mistakes_{md_model.name}.tsv",verbose=(not args.quiet))
+        mistakes_file = None
+        if args.print_mistakes:
+            mistakes_file = f"mistakes_{md_model.name}.tsv"
+        run_model(md_model, train_sentences, dev_sentences_target,
+                  baseline_f1=baseline_f1, file_mistakes=mistakes_file,verbose=(not args.quiet))
 
     # Possibly run WordDictModel
-    if args.enable_word_dict:
+    if args.enable_word_dict or args.enable_baselines or args.enable_all:
         wd_model = WordDictModel(args.word_etym_file, args.affixes_file)
-        run_model(wd_model, wd_model.name,
-                  train_sentences, dev_sentences_target,
-                  baseline_f1, f"mistakes_{wd_model.name}.tsv",verbose=(not args.quiet))
+        mistakes_file = None
+        if args.print_mistakes:
+            mistakes_file = f"mistakes_{wd_model.name}.tsv"
+        run_model(wd_model, train_sentences, dev_sentences_target,
+                  baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet))
 
     # Possibly run MorphClassifier
-    if args.enable_morph_classifier:
+    if args.enable_morph_classifier or args.enable_all:
         if args.extend_train:
             train_sentences += single_morph_sentences_from_dict(args.root_etym_file)
             train_sentences += single_morph_sentences_from_dict(args.affixes_file)
-            write_morph_statistics(train_sentences,languages_file='lang_extended.tsv')
+            if args.print_stats:
+                write_morph_statistics(train_sentences,languages_file=args.stats_lang_train.replace('.tsv','_extended.tsv'))
             sentence_count,word_count,morph_count = count_sentences_words_morphs(train_sentences)
             print(f"Statistics on extended train -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}\n")
         else:
@@ -313,10 +328,14 @@ def main():
         )
         if args.load:
             args.load_model_path = learning_model.name + '.pkl'
+        if args.mistakes_file == None and args.print_mistakes:
+            mistakes_file = f"mistakes_{learning_model.name}.tsv"
+        else:
+            mistakes_file = args.mistakes_file #  if args.mistakes_file=None (None is default) no printing of mistakes. If mistakes_file is not None, mistakes are printed regardles of args.print_mistakes
         try:
-            run_model(learning_model, learning_model.name,
-                    train_sentences, dev_sentences_target,
-                    baseline_f1, f"mistakes_{learning_model.name}.tsv",verbose=(not args.quiet),load_model_path=args.load_model_path)
+            run_model(learning_model, train_sentences, dev_sentences_target,
+                    baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet),
+                    load_model_path=args.load_model_path)
             if args.save_model_path:
                 learning_model.save(args.save_model_path)
             elif args.save:
