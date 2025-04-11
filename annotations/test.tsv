@@ -333,7 +333,7 @@ Jejich cílem je naučit své okolí co nejdříve všechny potřebné praktick�
         c	D	ces
         o	I	ces
     nejdříve
-        nej	R	ces
+        nej	I	ces
         dřív	R	ces
         e	I	ces
     všechny
@@ -907,7 +907,7 @@ Pro úspěch jejich mise je nejdůležitější formulovat přesně potřeby pod
     je
         je	R	ces
     nejdůležitější
-        nej	R	ces
+        nej	I	ces
         dů	D	ces
         lež	R	ces
         it	D	ces
@@ -979,7 +979,7 @@ Je psána tak že přináší užitek jak manažerům na nejnižší úrovni ř�
     na
         na	D	ces
     nejnižší
-        nej	R	ces
+        nej	I	ces
         niž	R	ces
         š	D	ces
         í	I	ces
@@ -1617,7 +1617,7 @@ Zůstane mu navíc nemovitost a ta i za situace kdy to vypadá že ceny realit b
     v
         v	D	ces
     nejbližších
-        nej	R	ces
+        nej	I	ces
         bliž	R	ces
         š	D	ces
         ích	I	ces

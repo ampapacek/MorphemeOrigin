@@ -688,8 +688,8 @@ Aby byly údaje o přenosové rychlosti objektivně srovnatelné vydala mezinár
         k	D	ces
         ách	I	ces
     nejvyšší
-        nej	R	ces
-        vyš	D	ces
+        nej	I	ces
+        vyš	R	ces
         š	D	ces
         í	I	ces
     rychlostí
@@ -4850,7 +4850,7 @@ Fax smí instalovat a udržovat jen firmy s příslušnou licencí
         tel	D	ces
         e	D	ces
     nejlepší
-        nej	R	ces
+        nej	I	ces
         lep	R	ces
         š	D	ces
         í	I	ces
@@ -4975,7 +4975,7 @@ Pokud nakupujete u firmy která sama instalace a servis neprovádí pak by vám 
         firm	R	ita,lat
         u	I	ces
     nejlépe
-        nej	R	ces
+        nej	I	ces
         lép	R	ces
         e	I	ces
     takovou
@@ -5253,7 +5253,7 @@ Termozáznam na termocitlivý papír v roli o délce nejméně 30 m
         c	D	ces
         e	I	ces
     nejméně
-        nej	R	ces
+        nej	I	ces
         mén	R	ces
         ě	I	ces
     30
@@ -5283,7 +5283,7 @@ Informace o stavu přístroje na displayi nejméně 16 znaků
         play	R	eng,lat
         i	I	ces
     nejméně
-        nej	R	ces
+        nej	I	ces
         mén	R	ces
         ě	I	ces
     16
@@ -7211,7 +7211,7 @@ Ony jsou totiž největšími věřiteli a záleží na nich jak využijí možn
     totiž
         totiž	R	ces
     největšími
-        nej	R	ces
+        nej	I	ces
         vět	R	ces
         š	D	ces
         ími	R	ces
@@ -7361,7 +7361,7 @@ Výsledkem je že bankovní sféra začíná přehodnocovat svůj dosavadní pos
         sv	R	ces
         ým	D	ces
     největším
-        nej	R	ces
+        nej	I	ces
         vět	R	ces
         š	D	ces
         ím	I	ces

@@ -9,7 +9,7 @@ Potřebujete rychle poradit
         e	I	ces
     poradit
         po	D	ces
-        rad	R	ces
+        rad	R	gmh
         i	D	ces
         t	I	ces
 
@@ -320,7 +320,7 @@ Miroslava Hrnčířová patří k těm představitelům Tatry Kopřivnice kteř�
         ých	I	ces
     manažerů
         manaž	R	eng,ita
-        er	D	ces
+        er	D	lat
         ů	I	ces
     do
         do	D	ces
@@ -394,8 +394,8 @@ Možnost učit se od nich v každodenním kontaktu pokládám za životní šanc
         n	D	ces
         ím	I	ces
     kontaktu
-        kon	D	lat
-        takt	R	lat
+        kon	D	deu,lat
+        takt	R	deu,lat
         u	I	ces
     pokládám
         po	D	ces
@@ -554,7 +554,7 @@ Podniky začaly daleko pečlivěji zvažovat volbu výrobků které mají nejvě
         aj	D	ces
         í	I	ces
     největší
-        nej	R	ces
+        nej	I	ces
         vět	R	ces
         š	D	ces
         í	I	ces
@@ -997,8 +997,8 @@ Marian Hlavatý uvádí že od té doby co centrály v Bonnu a Londýně ponecha
 
 Kontakt Victoria Publishing Klimentská 30 110 00 Praha 1 tel 02 231 4361 231 0106 FAX 02 231 4361
     Kontakt
-        Kon	D	lat
-        takt	R	lat
+        Kon	D	deu,lat
+        takt	R	deu,lat
     Victoria
         Victoria	R	lat
     Publishing
@@ -1690,8 +1690,8 @@ Dotyčný zaměstnanec si však myslí že může dosáhnout nanejvýš 50 tisí
         t	D	ces
     nanejvýš
         na	D	ces
-        nej	R	ces
-        výš	D	ces
+        nej	I	ces
+        výš	R	ces
     50
         50	R	
     tisíc
@@ -1913,8 +1913,8 @@ Tyto obavy cítím i při projednávání psychologických vyšetření která j
 
 Nejvíc kritizují a rozčilují se neschopní
     Nejvíc
-        Nej	R	ces
-        víc	D	ces
+        Nej	I	ces
+        víc	R	ces
     kritizují
         krit	R	deu,lat,ell
         iz	D	fra,lat,ell
@@ -2215,7 +2215,7 @@ O centrální výrobě tepla se říká že je nejefektivnější
     je
         je	R	ces
     nejefektivnější
-        nej	D	ces
+        nej	I	ces
         efekt	R	lat
         iv	D	lat
         n	D	ces
