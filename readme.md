@@ -91,6 +91,22 @@ The primary machine learning model in this project is defined in `morph_classifi
   - You can save the trained model to disk with `--save` which saves the trained model to file `model.name + '.pkl'`. To specify path where to save model use `--save_model_path`
   - You can load the trained model to disk with `--load` which loads the trained model from file `model.name + '.pkl'`. To specify path from which to load the model use `--load_model_path`
 
+- **Generating Additional Information**
+
+  - **Stats Files**  
+   To specify paths to TSV files that store language- and morph- statistics for both train and test sets:
+    - `--stats_lang_test`: Where to store language counts on the test set (default: `languages_test_stats.tsv`)
+    - `--stats_morphs_test`: Where to store morph counts on the test set (default: `morphs_test_stats.tsv`)
+    - `--stats_lang_train`: Where to store language counts on the train set (default: `languages_train_stats.tsv`)
+    - `--stats_morphs_train`: Where to store morph counts on the train set (default: `morphs_train_stats.tsv`)
+
+    If you enable `--print_stats`, the script writes these files after loading the datasets.
+
+  - **Mistakes File**  
+    You can specify `--mistakes_file <filename>` to record all morphs for which the learning model fails to perfectly predict the target.
+    If `--print_mistakes` is set, the script will actually produce this mistakes file for all models (including baseline models). Otherwise, mistakes are not logged. With exception of learning `MorphClassifier` model if the `--mistakes_file` is specified.
+
+
 To see all available flags and parameters, run:
 ```bash
 python3 main.py --help
@@ -112,8 +128,6 @@ We provide four baseline models (see `baselines.py`), each offering a contrastin
 ## Evaluation
 
 Our primary evaluation computes an **F1 score** for each morph’s predicted vs. target etymology sets, then averages them (over all morphs). Additionally:
-
-- **Mistakes** can be logged to a file (with columns: word, morph, predicted, target).
   
 - Also report variant where we split evaluation by categories (e.g. “native” vs. “borrowed”) and return separate F1 scores and average of those two.
 - Report realtive error reduction of the standart F-score from the dummy baseline (always predict Czech)
