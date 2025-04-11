@@ -18,7 +18,7 @@ venv:
 # Run the main Python script using the MorphOriginVenv environment
 run: venv
 	@echo "Running Morph Etymology evaluation..."
-	@. MorphOriginVenv/bin/activate && python main.py --enable_all
+	@. MorphOriginVenv/bin/activate && python3 main.py --enable_all
 
 # Remove generated .tsv files
 clean:
