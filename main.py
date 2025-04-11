@@ -7,10 +7,10 @@ and then predicts etymology using various models:
   - MostFrequentOriginModel: Predicts the most frequent target if the morph was in training data, otherwise "ces" or another fallback
   - MorphDictModel: Uses root and affix dictionaries.
   - WordDictModel: Uses morphological analysis to get word-level lemma and look this lemma in Etymological dictionary.
-  - MorphClassifier: A learnable model (SVM, MLP, or LogisticRegression) plus optional embeddings.
+  - MorphClassifier: A learnable model (SVM, MLP, or LogisticRegression) with various extracted features optionaly embeddings.
 
-For each enabled model, the script prints the F-score, accuracy, and 
-the relative error reduction compared to the dummy model baseline.
+For each enabled model, the script prints the F-score, scores on native and borrowed morphs
+score when grouping morphs by ther text (count each unique morph just once), and the relative error reduction compared to the dummy model baseline.
 """
 import time
 import sys
@@ -24,7 +24,6 @@ from utils import (
     write_morph_statistics,
     count_sentences_words_morphs,
     single_morph_sentences_from_dict,
-    evaluate_combined
 )
 from baselines import (
     DummyModel,
@@ -181,8 +180,8 @@ def run_model(
         predictions = model.predict(dev_data)
 
         # Evaluate
-        evaluation_results = evaluate_combined(predictions, target_data, standard_eval=True,native_borrowed_eval=True,group_by_text_eval=True, file_mistakes=mistakes_file)
-        f_score = evaluation_results['standard_fscore']
+        evaluation_results = evaluate(predictions, target_data, standard_eval=True,native_borrowed_eval=True,group_by_text_eval=True, file_mistakes=mistakes_file)
+        f_score = evaluation_results['f1score']
         f_score_native = evaluation_results['native_f1']
         f_score_borrowed = evaluation_results['borrowed_f1']
         f_score_grouped = evaluation_results['grouped_fscore']
@@ -238,8 +237,8 @@ def main():
     dummy_predictions = dummy_model.predict(dev_dummy)
 
     if args.enable_dummy:
-        evaluation_results = evaluate_combined(dummy_predictions, dev_sentences_target, standard_eval=True,native_borrowed_eval=True,group_by_text_eval=True)
-        f_score_dummy = evaluation_results['standard_fscore']
+        evaluation_results = evaluate(dummy_predictions, dev_sentences_target, standard_eval=True,native_borrowed_eval=True,group_by_text_eval=True)
+        f_score_dummy = evaluation_results['f1score']
         f_score_native = evaluation_results['native_f1']
         f_score_borrowed = evaluation_results['borrowed_f1']
         f_score_grouped = evaluation_results['grouped_fscore']
@@ -248,8 +247,8 @@ def main():
         print(f"Grouped by unique morphs: {f_score_grouped:.3f} %")
         print(f"F-score Native {f_score_native:.3f} %, Borrowed: {f_score_borrowed:.3f} %\n")
     else:
-        evaluation_results = evaluate_combined(dummy_predictions, dev_sentences_target, standard_eval=True,native_borrowed_eval=False,group_by_text_eval=False)
-        f_score_dummy = evaluation_results['standard_fscore']
+        evaluation_results = evaluate(dummy_predictions, dev_sentences_target, standard_eval=True,native_borrowed_eval=False,group_by_text_eval=False)
+        f_score_dummy = evaluation_results['f1score']
     baseline_f1 = f_score_dummy
 
     if args.enable_mfo:
