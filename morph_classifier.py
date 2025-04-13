@@ -94,7 +94,7 @@ class MorphClassifier(Model):
         name: str = None,
         classifier_type: Literal["svm", "mlp", "lr"] = "mlp",
         mlp_ensemble_size: int = 1,
-        mlp_hidden_size: int = 100,
+        mlp_hidden_size: int = 30,
         svm_c: float = 1.0,
         random_state: int = 42,
         use_char_ngrams: bool = True,
