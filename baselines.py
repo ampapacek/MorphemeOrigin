@@ -160,11 +160,11 @@ class MorphDictModel(Model):
         based on morph.morph_position.
       - Otherwise, default to ["ces"].
     """
-    def __init__(self, root_etym_file: str, affixes_file: str, name: str = "MorphDictModel") -> None:
+    def __init__(self, root_etym_file: str, affixes_file: str,binary:bool = False, name: str = "MorphDictModel") -> None:
         super().__init__(name)
         self.roots_etymology = load_etym_dict(root_etym_file)
         self.prefixes, self.suffixes = load_affixes(affixes_file)
-
+        self.binary = binary
     def fit(self, data: List[DataSentence]) -> None:
         """No training needed for this rule-based approach."""
         pass
@@ -186,6 +186,9 @@ class MorphDictModel(Model):
                             morph.etymology = affix_etyms if affix_etyms else ["ces"]
                         else:
                             morph.etymology = ["ces"]
+                    if self.binary:
+                        if morph.etymology != ["ces"]: 
+                            morph.etymology = ["borrowed"]
         return predictions
 
 class WordDictModel(Model):
@@ -202,11 +205,11 @@ class WordDictModel(Model):
         """Custom exception indicating a network-related failure."""
         pass    
 
-    def __init__(self, word_etym_file: str, affixes_file: str, name: str = "WordDictModel") -> None:
+    def __init__(self, word_etym_file: str, affixes_file: str,binary:bool = False, name: str = "WordDictModel") -> None:
         super().__init__(name)
         self.words_etymology = load_etym_dict(word_etym_file)
         self.prefixes, self.suffixes = load_affixes(affixes_file)
-
+        self.binary = binary
     def fit(self, data: List[DataSentence]) -> None:
         """No training necessary for this word-level dictionary model."""
         pass
@@ -276,5 +279,9 @@ class WordDictModel(Model):
                         morph.etymology = affix_etyms if affix_etyms else ["ces"]
                     else:
                         morph.etymology = ["ces"]
+
+                    if self.binary:
+                        if morph.etymology != ["ces"]: 
+                            morph.etymology = ["borrowed"]
         return predictions
     

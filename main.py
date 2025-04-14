@@ -146,6 +146,9 @@ def parse_args():
     parser.add_argument("--quiet", "-q", action="store_true",
                         help="Disables printing of additional information like timing.")
 
+    parser.add_argument("--binary", action="store_true",
+                        help="Enables binary classification. Just Native or Borrowed. (default: False)" )
+
     return parser.parse_args()
 
 def run_model(
@@ -230,6 +233,17 @@ def main():
     test_sentences_target = load_annotations(args.target_file)
     # Load train data
     train_sentences = load_annotations(args.train_file)
+
+    if args.binary:
+        all_sentences = train_sentences + test_sentences_target
+        for sentence in all_sentences:
+            for morph in sentence:
+                if morph.etymology:
+                    if 'ces' in morph.etymology:
+                        morph.etymology = ['ces']
+                    else:
+                        morph.etymology = ['borrowed']
+
     sentence_count_test,word_count_test,morph_count_test = count_sentences_words_morphs(test_sentences_target)
     sentence_count_train,word_count_train,morph_count_train = count_sentences_words_morphs(train_sentences)
 
@@ -277,7 +291,7 @@ def main():
 
     # Possibly run MorphDictModel
     if args.enable_morph_dict or args.enable_baselines or args.enable_all:
-        md_model = MorphDictModel(args.root_etym_file, args.affixes_file)
+        md_model = MorphDictModel(args.root_etym_file, args.affixes_file, binary=args.binary)
         mistakes_file = None
         if args.print_mistakes:
             mistakes_file = f"mistakes_{md_model.name}.tsv"
@@ -286,7 +300,7 @@ def main():
 
     # Possibly run WordDictModel
     if args.enable_word_dict or args.enable_baselines or args.enable_all:
-        wd_model = WordDictModel(args.word_etym_file, args.affixes_file)
+        wd_model = WordDictModel(args.word_etym_file, args.affixes_file, binary=args.binary)
         mistakes_file = None
         if args.print_mistakes:
             mistakes_file = f"mistakes_{wd_model.name}.tsv"
