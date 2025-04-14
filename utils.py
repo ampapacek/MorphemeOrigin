@@ -509,66 +509,109 @@ def calculate_cohen_kappa(sentences1: List[DataSentence], sentences2: List[DataS
     kappa = (observed_agreement - expected_agreement) / (1 - expected_agreement)
     return kappa
 
+from collections import defaultdict
+from typing import Dict, List, Optional
+
 def evaluate(
     sentences_prediction: List["DataSentence"],
     sentences_target: List["DataSentence"],
-    standard_eval: bool = True,
+    instance_eval: bool = True,
+    micro_eval: bool = False,
     native_borrowed_eval: bool = False,
     group_by_text_eval: bool = False,
     file_mistakes: Optional[str] = None
 ) -> Dict[str, float]:
     """
-    Performs the evaluation, collecting metrics in three possible ways:
-    
-    1) Standard (micro) F1 across all morphs + percentage of fully correct morphs
-       - Enabled by standard_eval=True, default = True
-    2) Native vs. Borrowed F1 (target = {"ces"} vs. otherwise). Compute separately for native and for borrowed.
-       - Enabled by native_borrowed_eval=True
-    3) Group by `morph.text`, average F1 per unique morphs (just by text) and compute the average score in each group,
-        then average across all groups (unique morphs).
-       - Enabled by group_by_text_eval=True
+    Performs various evaluations of predicted vs. target etymologies in a single pass:
 
-    The function returns a dictionary whose keys depend on which evaluations are enabled.
-    Example keys:
-      "f1score", "accuracy",
-      "native_f1", "borrowed_f1",
-      "grouped_fscore".
+    1) Instance-Based (Per-Morph) Evaluation (enabled by instance_eval=True):
+       - For each morph, compute its own F1. Then average across morphs.
+         - Also compute "accuracy" = % of morphs with perfect F1 (==1.0).
+       - If a file_mistakes is provided, logs each morph with F1 != 1.0.
 
-    If file_mistakes is provided, logs mistakes (a morph is a 'mistake' if its F1 != 1.0).
+    2) Micro Evaluation (enabled by micro_eval=True):
+       - Aggregates all intersections and sets across all morphs, 
+         computing a single micro precision/recall/F1 at the end.
+
+    3) Native vs. Borrowed (enabled by native_borrowed_eval=True):
+       - If target etymology == {"ces"}, treat as "native"; else "borrowed".
+       - Compute average F1 for each group.
+
+    4) Group By Morph Text (enabled by group_by_text_eval=True):
+       - Group morphs by their textual string (morph.text).
+       - Compute the average F1 for each distinct text, 
+         then average across all distinct morph.text values.
+
+    The function returns a dictionary containing whichever metrics were requested. 
+
+    Parameters:
+    -----------
+    sentences_prediction : list of DataSentence
+        The predicted sentences with morph-level etymologies.
+    sentences_target : list of DataSentence
+        The ground-truth / reference sentences with morph-level etymologies.
+    instance_eval : bool, default=True
+        If True, computes a per-morph F1 and then averages across all morphs.
+        Also logs mistakes to file if file_mistakes is provided.
+    micro_eval : bool, default=False
+        If True, computes a single micro F1 across all morphs (intersection-based).
+    native_borrowed_eval : bool, default=False
+        If True, also computes separate F1 for target=ces (native) vs. borrowed.
+    group_by_text_eval : bool, default=False
+        If True, also computes an F1 by grouping morphs according to morph.text.
+    file_mistakes : str, optional
+        If specified and instance_eval=True, logs each morph with F1 != 1.0 
+        to this file.
 
     Returns:
-        A dictionary with any requested metrics:
-          {
-            "f1score": float,
-            "accuracy": float,
-            "native_f1": float,
-            "borrowed_f1": float,
-            "grouped_fscore": float,
-          }
-        (keys only present if that evaluation is enabled)
+    --------
+    Dictionary of metrics that were computed. 
+    Example:
+        evaluate(predictions, target_data, instance_eval=True,micro_eval=True,native_borrowed_eval=True,group_by_text_eval=True, file_mistakes=file_mistakes)
+        Can return dictionary like this:
+            {
+                "f1score_instance": ...,
+                "accuracy_instance": ...,
+                "f1score_micro": ...,
+                "f1_on_native": ...,
+                "f1_on_borrowed": ...,
+                "grouped_fscore": ...,
+            }
     """
-    native_borrowed_eval = True
-    # For mistakes logging (applies to standard approach)
-    mistakes_f = open(file_mistakes, 'wt') if file_mistakes else None
-    if mistakes_f and standard_eval:
-        print("word\tmorph\tprediction\ttarget", file=mistakes_f)
+    micro_eval = group_by_text_eval = native_borrowed_eval = True
+    results = {}
 
-    # (1) Standard approach
-    total_f1_sum = 0.0
-    morph_count = 0
-    mistakes_count = 0
+    # For mistakes logging (only relevant for instance-level approach)
+    mistakes_f = open(file_mistakes, 'wt') if file_mistakes and instance_eval else None
+    if mistakes_f:
+        # Just a header
+        print("word\tmorph_text\tprediction\ttarget", file=mistakes_f)
 
-    # (2) Native vs. Borrowed
-    f1_on_native_sum = 0.0
-    native_count = 0
-    f1_on_borrowed_sum = 0.0
-    borrowed_count = 0
+    # (1) For instance-based approach
+    if instance_eval:
+        instance_f1_sum = 0.0
+        instance_morph_count = 0
+        instance_mistakes_count = 0
 
-    # (3) Group by text
+    # (2) For micro-based approach
+    if micro_eval:
+        total_intersection = 0
+        total_predicted    = 0
+        total_actual       = 0
+
+    # (3) Native vs. Borrowed
+    if native_borrowed_eval:
+        f1_native_sum = 0.0
+        native_count  = 0
+        f1_borrowed_sum = 0.0
+        borrowed_count   = 0
+
+    # (4) Group-by-text accumulators
     if group_by_text_eval:
-        f1_accumulators = defaultdict(lambda: {"sum": 0.0, "count": 0})
+        f1_accumulators = defaultdict(lambda: {"sum": 0.0, "count": 0}) if group_by_text_eval else None
 
     for sent_pred, sent_tgt in zip(sentences_prediction, sentences_target):
+        # Basic check for sentence-level mismatch
         assert sent_pred.sentence == sent_tgt.sentence, \
             f"Sentence mismatch: {sent_pred.sentence} != {sent_tgt.sentence}"
 
@@ -579,91 +622,97 @@ def evaluate(
                     f"Morph text mismatch: {morph_pred.text} != {morph_tgt.text}"
 
                 pred_set = set(morph_pred.etymology)
-                tgt_set = set(morph_tgt.etymology)
+                tgt_set  = set(morph_tgt.etymology)
 
-                # If target is empty, skip (punct, numeric, etc.)
+                # If target is empty, skip (e.g. punctuation)
                 if not tgt_set:
                     continue
 
-                # Compute F1
+                # Compute intersection-based stats
                 intersection = pred_set.intersection(tgt_set)
-                precision = len(intersection) / len(pred_set) if pred_set else 0
-                recall = len(intersection) / len(tgt_set) if tgt_set else 0
+                precision = len(intersection) / len(pred_set) if pred_set else 0.0
+                recall    = len(intersection) / len(tgt_set)  if tgt_set  else 0.0
                 denom = precision + recall
-                f1 = (2 * precision * recall / denom) if denom > 0 else 0.0
+                f1 = 2.0 * precision * recall / denom if denom > 0 else 0.0
 
-                # (1) Standard approach: micro average across all morphs
-                if standard_eval:
-                    total_f1_sum += f1
-                    morph_count += 1
+                # (1) instance-based approach
+                if instance_eval:
+                    instance_f1_sum += f1
+                    instance_morph_count += 1
                     if f1 != 1.0:
-                        mistakes_count += 1
+                        instance_mistakes_count += 1
                         if mistakes_f:
-                            print(
-                                f"{word_tgt.text}\t{morph_tgt.text}\t{morph_pred.etymology}\t{morph_tgt.etymology}",
-                                file=mistakes_f
-                            )
+                            print(f"{word_tgt.text}\t{morph_tgt.text}\t{morph_pred.etymology}\t{morph_tgt.etymology}",
+                                  file=mistakes_f)
 
-                # (2) native vs. borrowed
+                # (2) micro-based approach
+                if micro_eval:
+                    total_intersection += len(intersection)
+                    total_predicted    += len(pred_set)
+                    total_actual       += len(tgt_set)
+
+                # (3) native vs. borrowed
                 if native_borrowed_eval:
                     is_native = (tgt_set == {"ces"})
                     if is_native:
-                        f1_on_native_sum += f1
-                        native_count += 1
-                    else: 
-                        # is borrowed
-                        f1_on_borrowed_sum += f1
-                        borrowed_count += 1
+                        f1_native_sum += f1
+                        native_count  += 1
+                    else:
+                        f1_borrowed_sum += f1
+                        borrowed_count   += 1
 
-                # (3) grouping by morph text
-                if group_by_text_eval:
-                    text = morph_tgt.text  # same as morph_pred.text
-                    f1_accumulators[text]["sum"] += f1
+                # (4) group by text
+                if group_by_text_eval and f1_accumulators is not None:
+                    text = morph_tgt.text
+                    f1_accumulators[text]["sum"]   += f1
                     f1_accumulators[text]["count"] += 1
 
     # Close mistakes file if open
     if mistakes_f:
         mistakes_f.close()
 
-    # Prepare results
-    results = {}
+    # --- Final Computations ---
 
-    # (1) Compute standard if needed
-    if standard_eval and morph_count > 0:
-        standard_fscore = 100.0 * total_f1_sum / morph_count
-        standard_accuracy = 100.0 * (morph_count - mistakes_count) / morph_count
-        results["f1score"] = standard_fscore
-        results["accuracy"] = standard_accuracy
+    # (1) instance-based
+    if instance_eval and instance_morph_count > 0:
+        avg_f1score = 100.0 * instance_f1_sum / instance_morph_count
+        accuracy    = 100.0 * (instance_morph_count - instance_mistakes_count) / instance_morph_count
+        results["f1score_instance"]   = avg_f1score
+        results["accuracy_instance"]  = accuracy
 
-    # (2) Compute native vs borrowed if needed
+    # (2) micro-based
+    if micro_eval:
+        if total_predicted > 0 and total_actual > 0:
+            micro_precision = total_intersection / total_predicted
+            micro_recall    = total_intersection / total_actual
+            denom = micro_precision + micro_recall
+            micro_f1 = 2.0 * micro_precision * micro_recall / denom if denom > 0 else 0.0
+            results["f1score_micro"] = 100.0 * micro_f1
+        else:
+            results["f1score_micro"] = 0.0
+
+    # (3) native/borrowed
     if native_borrowed_eval:
-        # If no native or borrowed morphs, treat that as 100% by default
         if native_count > 0:
-            f1_on_native = 100.0 * f1_on_native_sum / native_count
+            f1_native = 100.0 * f1_native_sum / native_count
         else:
-            f1_on_native = 100.0
-
+            f1_native = 100.0
         if borrowed_count > 0:
-            f1_on_borrowed = 100.0 * f1_on_borrowed_sum / borrowed_count
+            f1_borrowed = 100.0 * f1_borrowed_sum / borrowed_count
         else:
-            f1_on_borrowed = 100.0
+            f1_borrowed = 100.0
+        results["f1_on_native"]   = f1_native
+        results["f1_on_borrowed"] = f1_borrowed
 
-
-        results["f1_on_native"] = f1_on_native
-        results["f1_on_borrowed"] = f1_on_borrowed
-
-    # (3) Group by morph text
-    if group_by_text_eval and f1_accumulators:
-        text_level_averages = []
+    # (4) group by text
+    if group_by_text_eval and f1_accumulators and len(f1_accumulators) > 0:
+        text_averages = []
         for morph_text, vals in f1_accumulators.items():
             if vals["count"] > 0:
-                avg_f1 = vals["sum"] / vals["count"]
-                text_level_averages.append(avg_f1)
-        if text_level_averages:
-            grouped_fscore = 100.0 * sum(text_level_averages) / len(text_level_averages)
+                text_averages.append(vals["sum"] / vals["count"])
+        if text_averages:
+            results["grouped_fscore"] = 100.0 * sum(text_averages) / len(text_averages)
         else:
-            grouped_fscore = 0.0
-        results["grouped_fscore"] = grouped_fscore
+            results["grouped_fscore"] = 0.0
 
     return results
-
