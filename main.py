@@ -93,8 +93,8 @@ def parse_args():
                         help="Classifier type: 'svm', 'mlp', or 'lr' (default: mlp).")
     parser.add_argument("--mlp_ensemble_size", type=int, default=1,
                         help="Number of MLP classifiers in an ensemble (default: 1).")
-    parser.add_argument("--mlp_hidden_size", type=int, default=100,
-                        help="Hidden layer size for MLP classifier (default: 100).")
+    parser.add_argument("--mlp_hidden_size", type=int, default=30,
+                        help="Hidden layer size for MLP classifier (default: 30).")
     parser.add_argument("--svm_c", type=float, default=1.0,
                         help="C parameter for LinearSVC (default: 1.0).")
     parser.add_argument("--svm_kernel", type=str, default='rbf',
@@ -206,7 +206,7 @@ def run_model(
             print()
             print("Results:")
         print(f"Standard F-score: {f_score:.1f} %")
-        print(f"F-score: on native morphs: {f_score_on_native:.1f} %, on borrowed: {f_score_on_borrowed:.1f} %, grouped by unique morphs (macro F1): {f_score_grouped:.1f} %")
+        print(f"F-score: on native morphs: {f_score_on_native:.1f} %, on borrowed: {f_score_on_borrowed:.1f} %, grouped by unique morphs: {f_score_grouped:.1f} %")
         if improvement:
             print(f"Relative Error Reduction over dummy baseline on standard F-score: {improvement:.1f} %\n")
     except WordDictModel.NetworkError as net_err:
