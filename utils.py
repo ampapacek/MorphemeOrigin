@@ -547,7 +547,7 @@ def evaluate(
           }
         (keys only present if that evaluation is enabled)
     """
-
+    native_borrowed_eval = True
     # For mistakes logging (applies to standard approach)
     mistakes_f = open(file_mistakes, 'wt') if file_mistakes else None
     if mistakes_f and standard_eval:
@@ -559,9 +559,9 @@ def evaluate(
     mistakes_count = 0
 
     # (2) Native vs. Borrowed
-    native_f1_sum = 0.0
+    f1_on_native_sum = 0.0
     native_count = 0
-    borrowed_f1_sum = 0.0
+    f1_on_borrowed_sum = 0.0
     borrowed_count = 0
 
     # (3) Group by text
@@ -608,10 +608,11 @@ def evaluate(
                 if native_borrowed_eval:
                     is_native = (tgt_set == {"ces"})
                     if is_native:
-                        native_f1_sum += f1
+                        f1_on_native_sum += f1
                         native_count += 1
-                    else:
-                        borrowed_f1_sum += f1
+                    else: 
+                        # is borrowed
+                        f1_on_borrowed_sum += f1
                         borrowed_count += 1
 
                 # (3) grouping by morph text
@@ -638,17 +639,18 @@ def evaluate(
     if native_borrowed_eval:
         # If no native or borrowed morphs, treat that as 100% by default
         if native_count > 0:
-            native_f1 = 100.0 * native_f1_sum / native_count
+            f1_on_native = 100.0 * f1_on_native_sum / native_count
         else:
-            native_f1 = 100.0
+            f1_on_native = 100.0
 
         if borrowed_count > 0:
-            borrowed_f1 = 100.0 * borrowed_f1_sum / borrowed_count
+            f1_on_borrowed = 100.0 * f1_on_borrowed_sum / borrowed_count
         else:
-            borrowed_f1 = 100.0
+            f1_on_borrowed = 100.0
 
-        results["native_f1"] = native_f1
-        results["borrowed_f1"] = borrowed_f1
+
+        results["f1_on_native"] = f1_on_native
+        results["f1_on_borrowed"] = f1_on_borrowed
 
     # (3) Group by morph text
     if group_by_text_eval and f1_accumulators:

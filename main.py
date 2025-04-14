@@ -194,21 +194,21 @@ def run_model(
         # Evaluate
         evaluation_results = evaluate(predictions, target_data, standard_eval=True,native_borrowed_eval=True,group_by_text_eval=True, file_mistakes=file_mistakes)
         f_score = evaluation_results['f1score']
-        f_score_native = evaluation_results['native_f1']
-        f_score_borrowed = evaluation_results['borrowed_f1']
+        f_score_on_native = evaluation_results['f1_on_native']
+        f_score_on_borrowed = evaluation_results['f1_on_borrowed']
         f_score_grouped = evaluation_results['grouped_fscore']
         improvement = None
         if baseline_f1 and baseline_f1 > 0:
             improvement = relative_error_reduction(baseline_f1, f_score)
         if verbose:
-            print(f"Predictions computed and evaluated. Total time {time.time()-start_time:.3f} s")
+            print(f"Predictions computed and evaluated. Total time {time.time()-start_time:.2f} s")
         if verbose:
             print()
             print("Results:")
-        print(f"Standard micro F-score: {f_score:.3f} %")
-        print(f"F-score: native: {f_score_native:.3f} %, borrowed: {f_score_borrowed:.3f} %, grouped by unique morphs: {f_score_grouped:.3f} %")
+        print(f"Standard F-score: {f_score:.1f} %")
+        print(f"F-score: on native morphs: {f_score_on_native:.1f} %, on borrowed: {f_score_on_borrowed:.1f} %, grouped by unique morphs (macro F1): {f_score_grouped:.1f} %")
         if improvement:
-            print(f"Relative Error Reduction over dummy baseline on standard F-score: {improvement:.3f} %\n")
+            print(f"Relative Error Reduction over dummy baseline on standard F-score: {improvement:.1f} %\n")
     except WordDictModel.NetworkError as net_err:
         print(f"Network error while running model '{model_name}'.\nThe following exception occured: {net_err}")
         print()
@@ -222,7 +222,7 @@ def run_model(
 
 def main():
     args = parse_args()
-
+    args.enable_morph_classifier = True
     # Load dev/test data
     test_sentences_target = load_annotations(args.target_file)
     # Load train data
