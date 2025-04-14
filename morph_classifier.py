@@ -17,7 +17,11 @@ from model import Model
 from data_sentece import DataSentence
 from data_transformers import EmbeddingTransformer, VowelStartEndTransformer
 
+import warnings
+from sklearn.exceptions import ConvergenceWarning
 
+# Suppress all ConvergenceWarnings
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 class MorphClassifier(Model):
     """
@@ -121,11 +125,13 @@ class MorphClassifier(Model):
                 classifier_description += f"_{mlp_hidden_size}"
             if mlp_ensemble_size > 1:
                 classifier_description += f"_ensamble{mlp_ensemble_size}"
-            embeding_description = '_no_emb'
+            embeding_description = ''
             if use_word_embedding:
                 embeding_description = '_word_emb'
             if use_morph_embedding:
                 embeding_description += '_morph_emb'
+            if embeding_description == '': 
+                embeding_description = '_no_emb'
             if use_word_embedding or use_morph_embedding:
                 embeding_description += '_dim' + str(embedding_dimension)
             multi_label_describtion = ''
