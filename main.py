@@ -194,6 +194,7 @@ def run_model(
         # Evaluate
         evaluation_results = evaluate(predictions, target_data, instance_eval=True,micro_eval=True,native_borrowed_eval=True,group_by_text_eval=True, file_mistakes=file_mistakes)
         f_score = evaluation_results['f1score_instance']
+        f_score_micro = evaluation_results['f1score_micro']
         f_score_on_native = evaluation_results['f1_on_native']
         f_score_on_borrowed = evaluation_results['f1_on_borrowed']
         f_score_grouped = evaluation_results['grouped_fscore']
@@ -205,7 +206,8 @@ def run_model(
         if verbose:
             print()
             print("Results:")
-        print(f"Standard F-score: {f_score:.1f} %")
+        print(f"Standard (averaged per instance) F-score: {f_score:.1f} %")
+        # print(f"Micro F-score: {f_score_micro:.1f} %")
         print(f"F-score: on native morphs: {f_score_on_native:.1f} %, on borrowed: {f_score_on_borrowed:.1f} %, grouped by unique morphs: {f_score_grouped:.1f} %")
         if improvement:
             print(f"Relative Error Reduction over dummy baseline on standard F-score: {improvement:.1f} %\n")
@@ -247,17 +249,20 @@ def main():
         mistakes_file = None
         if args.print_mistakes:
             mistakes_file = f"mistakes_{dummy_model.name}.tsv"
-        evaluation_results = evaluate(dummy_predictions, test_sentences_target, instance_eval=True, micro_eval=False,native_borrowed_eval=True,group_by_text_eval=True,file_mistakes=mistakes_file)
+        evaluation_results = evaluate(dummy_predictions, test_sentences_target, instance_eval=True, micro_eval=True,native_borrowed_eval=True,group_by_text_eval=True,file_mistakes=mistakes_file)
         f_score_dummy = evaluation_results['f1score_instance']
+        f_score_dummy_micro = evaluation_results['f1score_micro']
         f_score_native = evaluation_results['f1_on_native']
         f_score_borrowed = evaluation_results['f1_on_borrowed']
         f_score_grouped = evaluation_results['grouped_fscore']
         print("----- Dummy Model (baseline) -----")
-        print(f"F-score: {f_score_dummy:.1f} %")
+        print(f"Standard (averaged per instance) F-score: {f_score_dummy:.1f} %")
+        # print(f"Micro F-score: {f_score_dummy_micro:.1f} %")
+
         print(f"Grouped by unique morphs: {f_score_grouped:.1f} %")
         print(f"F-score Native {f_score_native:.1f} %, Borrowed: {f_score_borrowed:.1f} %\n")
     else:
-        evaluation_results = evaluate(dummy_predictions, test_sentences_target, instance_eval=True,micro_eval=False,native_borrowed_eval=False,group_by_text_eval=False)
+        evaluation_results = evaluate(dummy_predictions, test_sentences_target)
         f_score_dummy = evaluation_results['f1score_instance']
     baseline_f1 = f_score_dummy
 
