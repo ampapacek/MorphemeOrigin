@@ -578,7 +578,6 @@ def evaluate(
                 "grouped_fscore": ...,
             }
     """
-    micro_eval = group_by_text_eval = native_borrowed_eval = True
     results = {}
 
     # For mistakes logging (only relevant for instance-level approach)
@@ -671,7 +670,6 @@ def evaluate(
     if mistakes_f:
         mistakes_f.close()
 
-    # --- Final Computations ---
 
     # (1) instance-based
     if instance_eval and instance_morph_count > 0:
