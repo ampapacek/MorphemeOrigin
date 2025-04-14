@@ -464,13 +464,20 @@ class MorphClassifier(Model):
         if self.pipeline is None:
             raise ValueError("No pipeline to save. Train the model first.")
 
-        # Store both the pipeline and the ML binarizer (if present) together in a dict
+        # Store all neccesery parts (pipelines and mlb binarizer) and flags into dict
         objects_to_save = {
             "pipeline": self.pipeline,
             'fallback_pipeline': self.fallback_pipeline,
             "mlb": self._mlb,
             'name' :self.name,
-            'multi_label' : self.multi_label
+            'multi_label' : self.multi_label,
+            'use_word_embedd' : self.use_word_embedding,
+            'use_morph_embedd' : self.use_morph_embedding,
+            'embed_dim' : self.embedding_dimension,
+            'use_morph_type': self.use_morph_type,
+            'use_char_ngrams' : self.use_char_ngrams,
+            'use_morph_position' : self.use_morph_position,
+            'use_vowels' : self.use_vowel_start_end_features,
         }
 
         with open(filename, "wb") as f:
@@ -481,6 +488,7 @@ class MorphClassifier(Model):
     def load(self, filename: str) -> None:
         """
         Loads the pipeline and the MultiLabelBinarizer from disk.
+        Additionaly restore flags what features to use.
         The fastText model path is not included; 
         ensure fasttext_model_path is set correctly for inference.
         """
@@ -492,6 +500,15 @@ class MorphClassifier(Model):
         self.fallback_pipeline = saved_data["fallback_pipeline"]
         self.name = saved_data["name"]
         self.multi_label = saved_data['multi_label']
+
+        # feature flags
+        self.use_word_embedding = saved_data.get("use_word_embedd", self.use_word_embedding)
+        self.use_morph_embedding = saved_data.get("use_morph_embedd", self.use_morph_embedding)
+        self.embedding_dimension = saved_data.get("embed_dim", self.embedding_dimension)
+        self.use_morph_type = saved_data.get("use_morph_type", self.use_morph_type)
+        self.use_char_ngrams = saved_data.get("use_char_ngrams", self.use_char_ngrams)
+        self.use_morph_position = saved_data.get("use_morph_position", self.use_morph_position)
+        self.use_vowel_start_end_features = saved_data.get("use_vowels", self.use_vowel_start_end_features)
 
         if self.verbose:
             print(f"Model loaded from {filename}")
