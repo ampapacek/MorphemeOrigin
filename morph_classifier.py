@@ -96,6 +96,7 @@ class MorphClassifier(Model):
         mlp_ensemble_size: int = 1,
         mlp_hidden_size: int = 30,
         svm_c: float = 1.0,
+        svm_kernel:str = 'svm',
         random_state: int = 42,
         use_char_ngrams: bool = True,
         char_ngram_range: Tuple[int, int] = (1, 2),
@@ -141,6 +142,7 @@ class MorphClassifier(Model):
         self.mlp_ensemble_size = mlp_ensemble_size
         self.mlp_hidden_size = mlp_hidden_size
         self.svm_c = svm_c
+        self.svm_kernel = svm_kernel
         self.random_state = random_state
 
         # Feature flags
@@ -276,7 +278,7 @@ class MorphClassifier(Model):
         classifier_type = self.classifier_type.lower()
         if classifier_type == "svm":
             base_classifier = SVC(
-                kernel='rbf',
+                kernel=self.svm_kernel,
                 C=self.svm_c,
                 max_iter=5000,
                 random_state=self.random_state

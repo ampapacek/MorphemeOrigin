@@ -97,6 +97,8 @@ def parse_args():
                         help="Hidden layer size for MLP classifier (default: 100).")
     parser.add_argument("--svm_c", type=float, default=1.0,
                         help="C parameter for LinearSVC (default: 1.0).")
+    parser.add_argument("--svm_kernel", type=str, default='rbf',
+                        help="Kernel for the svm model (rbf,poly,linear,sigmoid,precomputed) (default: 'rbf').")
     parser.add_argument("--random_state", type=int, default=34867991,
                         help="Random seed for the MorphClassifier (default: 34867991).")
     
@@ -309,6 +311,7 @@ def main():
             mlp_ensemble_size=args.mlp_ensemble_size,
             mlp_hidden_size=args.mlp_hidden_size,
             svm_c=args.svm_c,
+            svm_kernel=args.svm_kernel,
 
             use_char_ngrams=(not args.disable_char_ngrams),
             char_ngram_range=char_ngram_range,
