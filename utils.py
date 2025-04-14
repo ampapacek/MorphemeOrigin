@@ -520,7 +520,7 @@ def evaluate(
     """
     Performs the evaluation, collecting metrics in three possible ways:
     
-    1) Standard (macro) F1 across all morphs + percentage of fully correct morphs
+    1) Standard (micro) F1 across all morphs + percentage of fully correct morphs
        - Enabled by standard_eval=True, default = True
     2) Native vs. Borrowed F1 (target = {"ces"} vs. otherwise). Compute separately for native and for borrowed.
        - Enabled by native_borrowed_eval=True
@@ -592,7 +592,7 @@ def evaluate(
                 denom = precision + recall
                 f1 = (2 * precision * recall / denom) if denom > 0 else 0.0
 
-                # (1) Standard approach: macro average across all morphs
+                # (1) Standard approach: micro average across all morphs
                 if standard_eval:
                     total_f1_sum += f1
                     morph_count += 1

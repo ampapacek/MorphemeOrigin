@@ -205,7 +205,7 @@ def run_model(
         if verbose:
             print()
             print("Results:")
-        print(f"Standard macro F-score: {f_score:.3f} %")
+        print(f"Standard micro F-score: {f_score:.3f} %")
         print(f"F-score: native: {f_score_native:.3f} %, borrowed: {f_score_borrowed:.3f} %, grouped by unique morphs: {f_score_grouped:.3f} %")
         if improvement:
             print(f"Relative Error Reduction over dummy baseline on standard F-score: {improvement:.3f} %\n")
