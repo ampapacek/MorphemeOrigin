@@ -48,7 +48,10 @@ class MorphClassifier(Model):
         Size of the hidden layer in MLP(s). (Single-layer only.)
 
     svm_c : float
-        C parameter for LinearSVC (only relevant if classifier_type="svm").
+        C parameter for SVM (only relevant if classifier_type="svm").
+
+    svm_kernel : str
+        Kernel to use for SVM (only relevant if classifier_type="svm").
 
     random_state : int
         Base random state for reproducibility.
@@ -70,6 +73,9 @@ class MorphClassifier(Model):
 
     use_word_embedding : bool
         Whether to include an embedding for the entire word.
+
+    use_vowel_start_end_features : bool
+        Whether to include information if the morph starts and/or ends with a vowel.
 
     embedding_dimension : int
         Dimension of the fastText embeddings.
