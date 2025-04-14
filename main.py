@@ -224,21 +224,22 @@ def run_model(
 
 def main():
     args = parse_args()
-    args.enable_morph_classifier = True
+    # args.enable_morph_classifier = True
+
     # Load dev/test data
     test_sentences_target = load_annotations(args.target_file)
     # Load train data
     train_sentences = load_annotations(args.train_file)
-    sentence_count,word_count,morph_count = count_sentences_words_morphs(test_sentences_target)
-    sentence_count,word_count,morph_count = count_sentences_words_morphs(train_sentences)
+    sentence_count_test,word_count_test,morph_count_test = count_sentences_words_morphs(test_sentences_target)
+    sentence_count_train,word_count_train,morph_count_train = count_sentences_words_morphs(train_sentences)
 
     if args.print_stats:
         write_morph_statistics(test_sentences_target, args.stats_lang_test, args.stats_morphs_test)
         write_morph_statistics(train_sentences, args.stats_lang_train, args.stats_morphs_train)
 
     if not args.quiet:
-        print(f"\nStatistics on Test -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}")
-        print(f"Statistics on Train -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}\n")
+        print(f"Statistics on Train -- Morphs: {morph_count_train}, Words: {word_count_train}, Sentences: {sentence_count_train}")
+        print(f"Statistics on Test -- Morphs: {morph_count_test}, Words: {word_count_test}, Sentences: {sentence_count_test}\n")
 
     # Always run dummy internally for baseline
     dummy_model = DummyModel()
@@ -299,8 +300,8 @@ def main():
             train_sentences += single_morph_sentences_from_dict(args.affixes_file)
             if args.print_stats:
                 write_morph_statistics(train_sentences,languages_file=args.stats_lang_train.replace('.tsv','_extended.tsv'))
-            sentence_count,word_count,morph_count = count_sentences_words_morphs(train_sentences)
-            print(f"Statistics on extended train -- Morphs: {morph_count}, Words: {word_count}, Sentences: {sentence_count}\n")
+            sentence_count_extended,word_count_extended,morph_count_extended = count_sentences_words_morphs(train_sentences)
+            print(f"Statistics on extended train -- Morphs: {morph_count_extended}, Words: {word_count_extended}, Sentences: {sentence_count_extended}\n")
         else:
             # if the train is not extended there is no need  to remove etym sequences with low frequency
             if args.min_seq_occurrence == 2:
