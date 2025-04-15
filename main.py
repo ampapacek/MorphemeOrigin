@@ -313,7 +313,7 @@ def main():
             train_sentences += single_morph_sentences_from_dict(args.root_etym_file)
             train_sentences += single_morph_sentences_from_dict(args.affixes_file)
             if args.print_stats:
-                write_morph_statistics(train_sentences,languages_file=args.stats_lang_train.replace('.tsv','_extended.tsv'))
+                write_morph_statistics(train_sentences,languages_file=args.stats_lang_train.replace('.tsv','_extended.tsv'),morphs_file=args.stats_morphs_train.replace('.tsv','_extended.tsv'))
             sentence_count_extended,word_count_extended,morph_count_extended = count_sentences_words_morphs(train_sentences)
             print(f"Statistics on extended train -- Morphs: {morph_count_extended}, Words: {word_count_extended}, Sentences: {sentence_count_extended}\n")
         else:
