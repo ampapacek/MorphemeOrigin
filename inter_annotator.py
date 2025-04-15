@@ -14,10 +14,10 @@ dev_sentences_annotator2 = load_annotations(dev_file_tomas)
 
 annotator1 = dev_sentences_annotator1_ales
 annotator2 = dev_sentences_annotator2
-f_score, exact_match = evaluate(annotator2,annotator1,differences_file)
+results = evaluate(annotator2,annotator1,file_mistakes=differences_file)
 
 print("----- Inter-Annotator Agreement -----")
-print(f"F-score {f_score:.3f} %, exact_match {exact_match:.3f} %")
+print(f"F-score {results['f1score_instance']:.2f} %, Exact_match {results['accuracy_instance']:.2f} %")
 
 cohen_kappa = calculate_cohen_kappa(annotator1,annotator2)
-print(f"Coehns kappa: {cohen_kappa:.3f}")
+print(f"Coehns kappa: {cohen_kappa:.2f}")
