@@ -212,7 +212,7 @@ def run_model(
         print(f"Standard (averaged per instance) F-score: {f_score:.1f} %")
         # print(f"Micro F-score: {f_score_micro:.1f} %")
         print(f"F-score: on native morphs: {f_score_on_native:.1f} %, on borrowed: {f_score_on_borrowed:.1f} %, grouped by unique morphs: {f_score_grouped:.1f} %")
-        if improvement:
+        if improvement != None:
             print(f"Relative Error Reduction over dummy baseline on standard F-score: {improvement:.1f} %\n")
     except WordDictModel.NetworkError as net_err:
         print(f"Network error while running model '{model_name}'.\nThe following exception occured: {net_err}")
