@@ -107,9 +107,9 @@ def parse_args():
     parser.add_argument("--random_state", type=int, default=34867991,
                         help="Random seed for the MorphClassifier (default: 34867991).")
     
-    parser.add_argument("--save_model_path", type=str, default="",
+    parser.add_argument("--save_model_path", type=str, default=None,
                         help="Path where to save the trained model. Automaticly enables loading. (default: empty => dont save model).")
-    parser.add_argument("--load_model_path", type=str, default="",
+    parser.add_argument("--load_model_path", type=str, default=None,
                         help="Path with the trained model for loading. Automaticly enables saving. (default: empty => dont load model).")
     parser.add_argument("--save", action="store_true",
                         help="If to save the trained model. If the path is not specified, model.name + .pkl is used.")
@@ -156,45 +156,34 @@ def parse_args():
 
     return parser.parse_args()
 
-def run_model(
+def test_model(
     model: Model,
-    train_data,
     target_data,
     baseline_f1: float = 0,
     file_mistakes: str = None,
     model_name: str = None,
     verbose:bool = True,
-    load_model_path:str = None,
     results_file: str = None
-) -> None:
+) -> dict[str,float]:
     """
     Fits (if applicable), predicts, evaluates, and prints results for a given model.
 
     Args:
-        model (Model): The model to run.
-        train_data: The training data (list of DataSentence).
+        model (Model): The trained model to evaluate.
         target_data: The dev/test data with target labels.
         baseline_f1 (float): The baseline F1 score for relative error computation. If it is not provided skip relative error computation.
         mistakes_file (str): If set, logs mistakes to this file.
         model_name (str): A name/description for printing.
         verbose (bool): Enable verbose output.
-        load_model_path (str): Path to the trained and saved model. If None or empty train the model from data.
         results_file (str): If provided, append a one-line TSV with metrics (no header) to this file.
+    
+        Returns:
+            dict[str,float] - dictionary with the result metrics
     """
     start_time = time.time()
     if model_name == None: model_name = model.name
     print(f"----- {model_name} -----")
     try:
-        if load_model_path:
-            try:
-                model.load(load_model_path)
-            except Exception as error:
-                print("Error when trying to load model from ", load_model_path)
-                print("The following error occured:", error)
-                print("Save the model first or call without load_model_path to train the model instead")
-                raise error
-        else:
-            model.fit(train_data)
         # Remove targets from the data to simulate unlabeled data
         test_data = remove_targets(target_data)
         if verbose:
@@ -248,6 +237,7 @@ def run_model(
         print(f"Error when running model: '{model_name}'")
         print(f"The following exception occurred:\n{e}\n")
         raise e
+    return evaluation_results
 
 def main():
     args = parse_args()
@@ -258,6 +248,12 @@ def main():
     stats_morphs_test_file = os.path.join(args.outputs_dir, args.stats_morphs_test)
     args.results_file = os.path.join(args.outputs_dir, args.results_file)
 
+    if args.results_file:
+        directory = os.path.dirname(args.results_file)
+        if directory: 
+            os.makedirs(directory, exist_ok=True)
+        with open(args.results_file, 'at') as file_results:
+            print('Name','F1 standard', 'Relative error reduction', 'F1 on native', 'F1 on borrowed', 'F1 unique averaged',sep='\t',file=file_results)
     # Load dev/test data
     test_sentences_target = load_annotations(args.target_file)
     # Load train data
@@ -285,37 +281,22 @@ def main():
         print(f"Statistics on Test -- Morphs: {morph_count_test}, Words: {word_count_test}, Sentences: {sentence_count_test}\n")
 
     # Always run dummy internally for baseline
-    dummy_model = DummyModel()
-    test_sentences_for_predict = remove_targets(test_sentences_target)
-    dummy_predictions = dummy_model.predict(test_sentences_for_predict)
+    dummy_model = DummyModel('DummyCesModel')
 
-    if args.enable_dummy or args.enable_baselines or args.enable_all:
-        mistakes_file = None
-        if args.print_mistakes:
-            mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{dummy_model.name}.tsv")
-        evaluation_results = evaluate(dummy_predictions, test_sentences_target, instance_eval=True, micro_eval=True,native_borrowed_eval=True,group_by_text_eval=True,file_mistakes=mistakes_file)
-        f_score_dummy = evaluation_results['f1score_instance']
-        f_score_dummy_micro = evaluation_results['f1score_micro']
-        f_score_native = evaluation_results['f1_on_native']
-        f_score_borrowed = evaluation_results['f1_on_borrowed']
-        f_score_grouped = evaluation_results['grouped_fscore']
-        print("----- Dummy Model (baseline) -----")
-        print(f"Standard (averaged per instance) F-score: {f_score_dummy:.1f} %")
-        # print(f"Micro F-score: {f_score_dummy_micro:.1f} %")
-
-        print(f"Grouped by unique morphs: {f_score_grouped:.1f} %")
-        print(f"F-score Native {f_score_native:.1f} %, Borrowed: {f_score_borrowed:.1f} %\n")
-    else:
-        evaluation_results = evaluate(dummy_predictions, test_sentences_target)
-        f_score_dummy = evaluation_results['f1score_instance']
-    baseline_f1 = f_score_dummy
+    dummy_verbose = args.enable_dummy or args.enable_baselines or args.enable_all # if its enable run as verbose, else run with quiet to get baseline f_score
+    mistakes_file = None
+    if args.print_mistakes:
+        mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{dummy_model.name}.tsv")
+    dummy_result = test_model(dummy_model,test_sentences_target,file_mistakes=mistakes_file,verbose=dummy_verbose,results_file=args.results_file)
+    baseline_f1 = dummy_result['f1score_instance']
 
     if args.enable_mfo or args.enable_baselines or args.enable_all:
-        mfo_model = MostFrequentOriginModel()
+        mfo_model = MostFrequentOriginModel('MostFreqModel')
+        mfo_model.fit(train_sentences)
         mistakes_file = None
         if args.print_mistakes:
             mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{mfo_model.name}.tsv")
-        run_model(mfo_model, train_sentences, test_sentences_target,
+        test_model(mfo_model, test_sentences_target,
                   baseline_f1=baseline_f1, file_mistakes=mistakes_file,verbose=(not args.quiet),results_file=args.results_file)
 
     # Possibly run MorphDictModel
@@ -324,7 +305,7 @@ def main():
         mistakes_file = None
         if args.print_mistakes:
             mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{md_model.name}.tsv")
-        run_model(md_model, train_sentences, test_sentences_target,
+        test_model(md_model, test_sentences_target,
                   baseline_f1=baseline_f1, file_mistakes=mistakes_file,verbose=(not args.quiet),results_file=args.results_file)
 
     # Possibly run WordDictModel
@@ -333,7 +314,7 @@ def main():
         mistakes_file = None
         if args.print_mistakes:
             mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{wd_model.name}.tsv")
-        run_model(wd_model, train_sentences, test_sentences_target,
+        test_model(wd_model, test_sentences_target,
                   baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet),results_file=args.results_file)
 
     # Possibly run MorphClassifier
@@ -379,17 +360,28 @@ def main():
             multi_label=args.multi_label,
             min_label_freq=args.min_seq_occurrence
         )
-        if args.load:
+        if args.load and not args.load_model_path:
             args.load_model_path = learning_model.name + '.pkl'
         if args.mistakes_file == None and args.print_mistakes:
             mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{learning_model.name}.tsv")
         else:
             mistakes_file = args.mistakes_file #  if args.mistakes_file=None (None is default) no printing of mistakes. If mistakes_file is not None, mistakes are printed regardles of args.print_mistakes
-        
+       
+        if args.load_model_path:
+            try:
+                learning_model.load(args.load_model_path)
+            except Exception as error:
+                print("Error when trying to load model from ", args.load_model_path)
+                print("The following error occured:", error)
+                print("Save the model first or call without load_model_path to train the model instead")
+                raise error
+        else:
+            learning_model.fit(train_sentences)
+
         try:
-            run_model(learning_model, train_sentences, test_sentences_target,
+            test_model(learning_model, test_sentences_target,
                     baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet),
-                    load_model_path=args.load_model_path,results_file=args.results_file)
+                    results_file=args.results_file)
             if args.save_model_path:
                 learning_model.save(args.save_model_path)
             elif args.save:
@@ -397,6 +389,7 @@ def main():
         # TODO: Make the excpetion handling better        
         except Exception as e:
             print("Terminating program after an error.")
+            print(f"The following error occured.\n{e}")
 
 
 
