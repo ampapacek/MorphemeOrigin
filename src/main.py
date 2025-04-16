@@ -67,7 +67,9 @@ def parse_args():
                         help="File to store morph stats for train (default: morphs_train_stats.tsv)")
     parser.add_argument("--mistakes_file", type=str, default=None,
                         help="File to print mistakes of the learning model (default: None => 'mistakes' + model.name + '.tsv")
-
+    parser.add_argument("--results_file", type=str, default="results.tsv",
+                        help="File to print the results (default: results.tsv)")
+    
     parser.add_argument("--print_stats", action="store_true",
                         help="Print statistics for morphs and language sequences in both the train and test sets. (default: False)")
     parser.add_argument("--print_mistakes", action="store_true",
@@ -162,7 +164,8 @@ def run_model(
     file_mistakes: str = None,
     model_name: str = None,
     verbose:bool = True,
-    load_model_path = ""
+    load_model_path:str = None,
+    results_file: str = None
 ) -> None:
     """
     Fits (if applicable), predicts, evaluates, and prints results for a given model.
@@ -176,6 +179,7 @@ def run_model(
         model_name (str): A name/description for printing.
         verbose (bool): Enable verbose output.
         load_model_path (str): Path to the trained and saved model. If None or empty train the model from data.
+        results_file (str): If provided, append a one-line TSV with metrics (no header) to this file.
     """
     start_time = time.time()
     if model_name == None: model_name = model.name
@@ -187,7 +191,7 @@ def run_model(
             except Exception as error:
                 print("Error when trying to load model from ", load_model_path)
                 print("The following error occured:", error)
-                print("Save the model firts or call without load_model_path to train the model instead")
+                print("Save the model first or call without load_model_path to train the model instead")
                 raise error
         else:
             model.fit(train_data)
@@ -208,24 +212,41 @@ def run_model(
         if baseline_f1 and baseline_f1 > 0:
             improvement = relative_error_reduction(baseline_f1, f_score)
         if verbose:
-            print(f"Predictions computed and evaluated. Total time {time.time()-start_time:.2f} s")
-        if verbose:
-            print()
+            elapsed = time.time() - start_time
+            print(f"Predictions computed and evaluated. Total time {elapsed:.2f} s\n")
             print("Results:")
-        print(f"Standard (averaged per instance) F-score: {f_score:.1f} %")
-        # print(f"Micro F-score: {f_score_micro:.1f} %")
-        print(f"F-score: on native morphs: {f_score_on_native:.1f} %, on borrowed: {f_score_on_borrowed:.1f} %, grouped by unique morphs: {f_score_grouped:.1f} %")
-        if improvement != None:
-            print(f"Relative Error Reduction over dummy baseline on standard F-score: {improvement:.1f} %\n")
+            print(f"Standard (averaged per instance) F-score: {f_score:.1f} %")
+            # print(f"Micro F-score:                         {f_score_micro:.1f} %")
+            print(f"F-score on native morphs:              {f_score_on_native:.1f} %")
+            print(f"F-score on borrowed morphs:            {f_score_on_borrowed:.1f} %")
+            print(f"Grouped by unique morph text F-score:  {f_score_grouped:.1f} %")
+            if improvement is not None:
+                print(f"Relative Error Reduction vs. baseline: {improvement:.1f} %\n")
+        
+        # If a results_file was given, append a TSV line with the metrics (no header)
+        if results_file:
+            directory = os.path.dirname(results_file)
+            if directory: 
+                os.makedirs(directory, exist_ok=True)
+                
+            with open(results_file, 'at') as rf:
+                # We'll log the improvement or '-' if None
+                improvement_str = f"{improvement:.1f}" if improvement is not None else "-"
+                rf.write(
+                    f"{model_name}\t"
+                    f"{f_score:.1f}\t"
+                    f"{improvement_str}\t"
+                    f"{f_score_on_native:.1f}\t"
+                    f"{f_score_on_borrowed:.1f}\t"
+                    f"{f_score_grouped:.1f}\n"
+                )
     except WordDictModel.NetworkError as net_err:
         print(f"Network error while running model '{model_name}'.\nThe following exception occured: {net_err}")
-        print()
         raise net_err
     
     except Exception as e:
         print(f"Error when running model: '{model_name}'")
-        print(f"The following exception occurred:\n    {e}\n")
-        print()
+        print(f"The following exception occurred:\n{e}\n")
         raise e
 
 def main():
@@ -235,6 +256,7 @@ def main():
     stats_languages_test_file = os.path.join(args.outputs_dir, args.stats_lang_test)
     stats_morphs_train_file = os.path.join(args.outputs_dir, args.stats_morphs_train)
     stats_morphs_test_file = os.path.join(args.outputs_dir, args.stats_morphs_test)
+    args.results_file = os.path.join(args.outputs_dir, args.results_file)
 
     # Load dev/test data
     test_sentences_target = load_annotations(args.target_file)
@@ -294,7 +316,7 @@ def main():
         if args.print_mistakes:
             mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{mfo_model.name}.tsv")
         run_model(mfo_model, train_sentences, test_sentences_target,
-                  baseline_f1=baseline_f1, file_mistakes=mistakes_file,verbose=(not args.quiet))
+                  baseline_f1=baseline_f1, file_mistakes=mistakes_file,verbose=(not args.quiet),results_file=args.results_file)
 
     # Possibly run MorphDictModel
     if args.enable_morph_dict or args.enable_baselines or args.enable_all:
@@ -303,7 +325,7 @@ def main():
         if args.print_mistakes:
             mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{md_model.name}.tsv")
         run_model(md_model, train_sentences, test_sentences_target,
-                  baseline_f1=baseline_f1, file_mistakes=mistakes_file,verbose=(not args.quiet))
+                  baseline_f1=baseline_f1, file_mistakes=mistakes_file,verbose=(not args.quiet),results_file=args.results_file)
 
     # Possibly run WordDictModel
     if args.enable_word_dict or args.enable_baselines or args.enable_all:
@@ -312,7 +334,7 @@ def main():
         if args.print_mistakes:
             mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{wd_model.name}.tsv")
         run_model(wd_model, train_sentences, test_sentences_target,
-                  baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet))
+                  baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet),results_file=args.results_file)
 
     # Possibly run MorphClassifier
     if args.enable_morph_classifier or args.enable_all:
@@ -322,7 +344,8 @@ def main():
             if args.print_stats:
                 write_morph_statistics(train_sentences,languages_file=stats_languages_train_file.replace('.tsv','_extended.tsv'),morphs_file=stats_morphs_train_file.replace('.tsv','_extended.tsv'))
             sentence_count_extended,word_count_extended,morph_count_extended = count_sentences_words_morphs(train_sentences)
-            print(f"Statistics on extended train -- Morphs: {morph_count_extended}, Words: {word_count_extended}, Sentences: {sentence_count_extended}\n")
+            if not args.quiet:
+                print(f"Statistics on extended train -- Morphs: {morph_count_extended}, Words: {word_count_extended}, Sentences: {sentence_count_extended}\n")
         else:
             # if the train is not extended there is no need  to remove etym sequences with low frequency
             if args.min_seq_occurrence == 2:
@@ -366,7 +389,7 @@ def main():
         try:
             run_model(learning_model, train_sentences, test_sentences_target,
                     baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet),
-                    load_model_path=args.load_model_path)
+                    load_model_path=args.load_model_path,results_file=args.results_file)
             if args.save_model_path:
                 learning_model.save(args.save_model_path)
             elif args.save:
