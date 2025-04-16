@@ -53,11 +53,18 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-myvenv
-MorphOriginVenv
+myvenv/
+MorphOriginVenv/
 
 # PyPI configuration file
 .pypirc
 
 # fast text model
 cc.cs.300.bin
+
+.DS_Store
+
+
+outputs/
+output/
+out/
