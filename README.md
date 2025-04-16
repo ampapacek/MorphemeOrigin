@@ -1,6 +1,6 @@
-# Morpheme Origin Project
+# Identification of Morpheme Origin
 
-This repository is part of a Bachelor thesis on **morpheme origin prediction**. Given morphologically segmented words or sentences, it aims to determine an etymology sequence (i.e., language of origin and possible intermediate languages) for each morph.
+This repository is part of a Bachelor thesis on **Identification of Morpheme Origin**. Given morphologically segmented words or sentences, it aims to determine an etymology sequence (i.e., language of origin and possible intermediate languages) for each morph.
 
 ## Overview
 
