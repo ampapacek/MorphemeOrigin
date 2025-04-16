@@ -136,8 +136,6 @@ class MorphClassifier(Model):
                 embeding_description = '_word_emb'
             if use_morph_embedding:
                 embeding_description += '_morph_emb'
-            if embeding_description == '': 
-                embeding_description = '_no_emb'
             if use_word_embedding or use_morph_embedding:
                 embeding_description += '_dim' + str(embedding_dimension)
             multi_label_describtion = ''
