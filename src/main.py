@@ -166,7 +166,7 @@ def test_model(
     results_file: str = None
 ) -> dict[str,float]:
     """
-    Fits (if applicable), predicts, evaluates, and prints results for a given model.
+    Take the model (already fited) makes predictions, evaluates, and prints results if verbose enabled and to separate file if results_file is specified.
 
     Args:
         model (Model): The trained model to evaluate.
