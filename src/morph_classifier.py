@@ -106,7 +106,7 @@ class MorphClassifier(Model):
         mlp_ensemble_size: int = 1,
         mlp_hidden_size: int = 30,
         svm_c: float = 1.0,
-        svm_kernel:str = 'svm',
+        svm_kernel:str = 'rbf',
         random_state: int = 42,
         use_char_ngrams: bool = True,
         char_ngram_range: Tuple[int, int] = (1, 2),
