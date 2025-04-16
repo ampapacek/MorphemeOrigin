@@ -81,7 +81,7 @@ jem	ces
 stat	ces
 měr	ces
 ruč	ces
-rad	ces
+rad	gmh
 střih	ces
 trh	ces
 bol	ces
@@ -823,7 +823,7 @@ tlach	ces
 prš	ces
 pruž	ces
 sáh	ces
-psych	ell
+psych	fra,lat,ell
 pump	deu,gml,dum
 rejd	gmh,fro
 soch	ces
@@ -1264,7 +1264,7 @@ fréz	deu,fra
 gal	lat,ell
 german	deu
 hadr	gmh
-haj	lav
+haj	ces
 hala	deu,gmh
 part	deu,gmh
 harfen	ces
@@ -2739,7 +2739,7 @@ cypřiš	lat,ell
 čeln	ces
 čepýř	ces
 červ	ces
-čeř	lav
+čeř	ces
 česnek	ces
 čí	ces
 čiž	ces
@@ -4567,7 +4567,7 @@ stéz	ell
 anex	lat
 gaž	fra
 angažm	fra
-angrešt	it,lat
+angrešt	ita,lat
 anilin	por,ara,pes
 animozit	lat
 anket	fra,lat
@@ -6366,7 +6366,7 @@ habaďúr	lat
 habán	deu
 háb	lat
 haciend	spa,lat
-hač	lav
+hač	ces
 háč	deu
 háď	ces
 háda	ces
@@ -7411,10 +7411,8 @@ kníže	ces
 knofl	gmh
 knoflík	gmh
 knut	rus,isl
-kodrcat	lit,lav
-komíhat	lit,lav
-ga-	lit,lav
-ko-1	lit,lav
+kodrcat	ces
+komíhat	ces
 ko-2	lat
 koalič	lat
 koal	lat
@@ -9838,7 +9836,7 @@ písati	ces
 pьsati	ces
 pseudo-	ell
 pstruž	ces
-psycho-	ell
+psycho-	fra,lat,ell
 ptáček	ces
 ptac	ces
 pter	ell

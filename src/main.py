@@ -9,12 +9,13 @@ and then predicts etymology using various models:
   - WordDictModel: Uses morphological analysis to get word-level lemma and look this lemma in Etymological dictionary.
   - MorphClassifier: A learnable model (SVM, MLP, or LogisticRegression) with various extracted features optionaly embeddings.
 
-For each enabled model, the script prints the F-score, scores on native and borrowed morphs
+For each enabled model, the script prints the F-score averaged over all morph instances, scores on native and borrowed morphs,
 score when grouping morphs by ther text (count each unique morph just once), and the relative error reduction compared to the dummy model baseline.
 """
 import time
 import sys
 import argparse
+import os
 
 from utils import (
     load_annotations,
@@ -42,18 +43,20 @@ def parse_args():
         description="Evaluate various Morph Etymology models on annotated data."
     )
     # File paths for training set, test set, and dictionaries for baselines
-    parser.add_argument("--train_file", type=str, default="annotations/train.tsv",
-                        help="Path to the training file (default: annotations/train.tsv)")
-    parser.add_argument("--target_file", type=str, default="annotations/dev.tsv",
-                        help="Path to the dev/test file (default: annotations/dev.tsv)")
-    parser.add_argument("--root_etym_file", type=str, default="additional_data/roots_etymology.tsv",
-                        help="Path to the root etymology file (default: additional_data/roots_etymology.tsv)")
-    parser.add_argument("--word_etym_file", type=str, default="additional_data/czetyl_max.tsv",
-                        help="Path to the word-level etymology file (default: additional_data/czetyl_max.tsv)")
-    parser.add_argument("--affixes_file", type=str, default="additional_data/affixes_etymology.tsv",
-                        help="Path to the affixes file (default: additional_data/affixes_etymology.tsv)")
+    parser.add_argument("--train_file", type=str, default="data/annotations/train.tsv",
+                        help="Path to the training file (default: data/annotations/train.tsv)")
+    parser.add_argument("--target_file", type=str, default="data/annotations/dev.tsv",
+                        help="Path to the dev/test file (default: data/annotations/dev.tsv)")
+    parser.add_argument("--root_etym_file", type=str, default="data/additional_data/roots_etymology.tsv",
+                        help="Path to the root etymology file (default: data/additional_data/roots_etymology.tsv)")
+    parser.add_argument("--word_etym_file", type=str, default="data/additional_data/czetyl_max.tsv",
+                        help="Path to the word-level etymology file (default: data/additional_data/czetyl_max.tsv)")
+    parser.add_argument("--affixes_file", type=str, default="data/additional_data/affixes_etymology.tsv",
+                        help="Path to the affixes file (default: data/additional_data/affixes_etymology.tsv)")
 
     # File paths for stats
+    parser.add_argument("--outputs_dir", type=str, default="outputs",
+                        help="Directory to save output files from the experiment (default: outputs)")
     parser.add_argument("--stats_lang_test", type=str, default="languages_test_stats.tsv",
                         help="File to store language stats for test (default: languages_test_stats.tsv)")
     parser.add_argument("--stats_morphs_test", type=str, default="morphs_test_stats.tsv",
@@ -228,6 +231,10 @@ def run_model(
 def main():
     args = parse_args()
     # args.enable_morph_classifier = True
+    stats_languages_train_file = os.path.join(args.outputs_dir, args.stats_lang_train)
+    stats_languages_test_file = os.path.join(args.outputs_dir, args.stats_lang_test)
+    stats_morphs_train_file = os.path.join(args.outputs_dir, args.stats_morphs_train)
+    stats_morphs_test_file = os.path.join(args.outputs_dir, args.stats_morphs_test)
 
     # Load dev/test data
     test_sentences_target = load_annotations(args.target_file)
@@ -248,8 +255,8 @@ def main():
     sentence_count_train,word_count_train,morph_count_train = count_sentences_words_morphs(train_sentences)
 
     if args.print_stats:
-        write_morph_statistics(test_sentences_target, args.stats_lang_test, args.stats_morphs_test)
-        write_morph_statistics(train_sentences, args.stats_lang_train, args.stats_morphs_train)
+        write_morph_statistics(test_sentences_target, stats_languages_test_file, stats_morphs_test_file)
+        write_morph_statistics(train_sentences, stats_languages_train_file, stats_morphs_train_file)
 
     if not args.quiet:
         print(f"Statistics on Train -- Morphs: {morph_count_train}, Words: {word_count_train}, Sentences: {sentence_count_train}")
@@ -263,7 +270,7 @@ def main():
     if args.enable_dummy or args.enable_baselines or args.enable_all:
         mistakes_file = None
         if args.print_mistakes:
-            mistakes_file = f"mistakes_{dummy_model.name}.tsv"
+            mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{dummy_model.name}.tsv")
         evaluation_results = evaluate(dummy_predictions, test_sentences_target, instance_eval=True, micro_eval=True,native_borrowed_eval=True,group_by_text_eval=True,file_mistakes=mistakes_file)
         f_score_dummy = evaluation_results['f1score_instance']
         f_score_dummy_micro = evaluation_results['f1score_micro']
@@ -285,7 +292,7 @@ def main():
         mfo_model = MostFrequentOriginModel()
         mistakes_file = None
         if args.print_mistakes:
-            mistakes_file = f"mistakes_{mfo_model.name}.tsv"
+            mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{mfo_model.name}.tsv")
         run_model(mfo_model, train_sentences, test_sentences_target,
                   baseline_f1=baseline_f1, file_mistakes=mistakes_file,verbose=(not args.quiet))
 
@@ -294,7 +301,7 @@ def main():
         md_model = MorphDictModel(args.root_etym_file, args.affixes_file, binary=args.binary)
         mistakes_file = None
         if args.print_mistakes:
-            mistakes_file = f"mistakes_{md_model.name}.tsv"
+            mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{md_model.name}.tsv")
         run_model(md_model, train_sentences, test_sentences_target,
                   baseline_f1=baseline_f1, file_mistakes=mistakes_file,verbose=(not args.quiet))
 
@@ -303,7 +310,7 @@ def main():
         wd_model = WordDictModel(args.word_etym_file, args.affixes_file, binary=args.binary)
         mistakes_file = None
         if args.print_mistakes:
-            mistakes_file = f"mistakes_{wd_model.name}.tsv"
+            mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{wd_model.name}.tsv")
         run_model(wd_model, train_sentences, test_sentences_target,
                   baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet))
 
@@ -313,7 +320,7 @@ def main():
             train_sentences += single_morph_sentences_from_dict(args.root_etym_file)
             train_sentences += single_morph_sentences_from_dict(args.affixes_file)
             if args.print_stats:
-                write_morph_statistics(train_sentences,languages_file=args.stats_lang_train.replace('.tsv','_extended.tsv'),morphs_file=args.stats_morphs_train.replace('.tsv','_extended.tsv'))
+                write_morph_statistics(train_sentences,languages_file=stats_languages_train_file.replace('.tsv','_extended.tsv'),morphs_file=stats_morphs_train_file.replace('.tsv','_extended.tsv'))
             sentence_count_extended,word_count_extended,morph_count_extended = count_sentences_words_morphs(train_sentences)
             print(f"Statistics on extended train -- Morphs: {morph_count_extended}, Words: {word_count_extended}, Sentences: {sentence_count_extended}\n")
         else:
@@ -352,9 +359,10 @@ def main():
         if args.load:
             args.load_model_path = learning_model.name + '.pkl'
         if args.mistakes_file == None and args.print_mistakes:
-            mistakes_file = f"mistakes_{learning_model.name}.tsv"
+            mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{learning_model.name}.tsv")
         else:
             mistakes_file = args.mistakes_file #  if args.mistakes_file=None (None is default) no printing of mistakes. If mistakes_file is not None, mistakes are printed regardles of args.print_mistakes
+        
         try:
             run_model(learning_model, train_sentences, test_sentences_target,
                     baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet),

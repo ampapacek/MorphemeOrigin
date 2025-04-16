@@ -2,9 +2,9 @@ from utils import load_annotations,calculate_cohen_kappa,evaluate
 
 # TODO: make this as argumetns of the script
 # Set file paths.
-dev_file_ales = 'annotations/dev.tsv'
-dev_file_tomas = 'annotations/dev_annotator2.tsv'
-differences_file = 'annotator_differences.tsv'
+dev_file_ales = 'data/annotations/dev.tsv'
+dev_file_tomas = 'data/annotations/dev_annotator2.tsv'
+differences_file = 'outputs/annotator_differences.tsv'
 
 # Load annotated test sentences (target data).
 dev_sentences_annotator1_ales = load_annotations(dev_file_ales)

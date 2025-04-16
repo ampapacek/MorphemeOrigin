@@ -1,5 +1,6 @@
 import sys
 import random
+import os
 from typing import List, Tuple, Optional, Dict
 from data_sentece import DataSentence,Word,Morph
 from collections import Counter, defaultdict
@@ -79,7 +80,7 @@ def load_annotations(filepath: str, indent: int = 4) -> List[DataSentence]:
             current_sentence_header = None
             current_words = []
 
-    with open(filepath, encoding="utf-8") as file:
+    with open(filepath, 'rt', encoding="utf-8") as file:
         for line in file:
             line = line.rstrip("\n")
             if not line.strip():
@@ -237,23 +238,28 @@ def write_morph_statistics(target_sentences: List["DataSentence"], languages_fil
                     languages[etym] += 1
 
     if languages_file is not None:
+        # Ensure the directory for `languages_file` exists
+        directory_languages_file = os.path.dirname(languages_file)
+        if directory_languages_file:  
+            os.makedirs(directory_languages_file, exist_ok=True) # Create the directory if it doesnt exist
         with open(languages_file, 'wt') as lang_f:
             for language, count in languages.most_common():
                 print(f"{language}\t{count}", file=lang_f)
 
     if morphs_file is not None:
+        directory_morphs_file = os.path.dirname(morphs_file)
+        if directory_morphs_file:  
+            os.makedirs(directory_morphs_file, exist_ok=True) # Create the directory if it doesnt exist
         with open(morphs_file, 'wt') as morphs_f:
-            lines = []
-            # Sort by descending sum of morph counts
+            cumulative_sum = 0
+
+            # Sort by descending number of different languages for the morph, secondary sum of morph counts
             for morph_text, etymology_counter in sorted(
-                morphs.items(), key=lambda item: sum(item[1].values()), reverse=True
+                morphs.items(), key=lambda item: (len(item[1]), sum(item[1].values())), reverse=True
             ):
-                if len(etymology_counter) > 1:
-                    print(f"{morph_text}\t{dict(etymology_counter)}", file=morphs_f)
-                else:
-                    lines.append(f"{morph_text}\t{dict(etymology_counter)}")
-            for line in lines:
-                print(line, file=morphs_f)
+                occurences = sum(etymology_counter.values())
+                cumulative_sum += occurences
+                print(f"{morph_text}\t{dict(etymology_counter)}", file=morphs_f)
                 
 def count_sentences_words_morphs(sentences:List["DataSentence"]):
     sentence_count = len(sentences)
@@ -338,6 +344,9 @@ def pprint_sentences(sentences: List[DataSentence], filename: Optional[str] = No
     """
     # Determine output stream: file or stdout.
     if filename:
+        directory = os.path.dirname(filename)
+        if directory:  # create dir if it doesnt exist
+            os.makedirs(directory, exist_ok=True)
         out_stream = open(filename, "wt", encoding="utf-8")
         close_stream = True
     else:
@@ -578,13 +587,18 @@ def evaluate(
                 "grouped_fscore": ...,
             }
     """
-    results = {}
-
-    # For mistakes logging (only relevant for instance-level approach)
-    mistakes_f = open(file_mistakes, 'wt') if file_mistakes and instance_eval else None
+    # For mistakes logging 
+    mistakes_f = None
+    if file_mistakes:
+        directory = os.path.dirname(file_mistakes)
+        if directory:  # create if directory doesnt exists
+            os.makedirs(directory, exist_ok=True)
+        mistakes_f = open(file_mistakes, 'wt') if file_mistakes and instance_eval else None
     if mistakes_f:
         # Just a header
         print("word\tmorph_text\tprediction\ttarget", file=mistakes_f)
+
+    results = {}
 
     # (1) For instance-based approach
     if instance_eval:

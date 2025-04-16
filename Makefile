@@ -18,14 +18,14 @@ venv:
 # Run the main Python script using the MorphOriginVenv environment
 run: venv
 	@echo "Running Morph Etymology evaluation..."
-	@. MorphOriginVenv/bin/activate && python3 main.py --enable_all
+	@. MorphOriginVenv/bin/activate && python3 src/main.py --enable_all
 
 # Remove generated .tsv files
 clean:
-	@echo "Cleaning up mistake and stats files..."
-	rm -f mistakes*.tsv morphs*stats.tsv languages*stats.tsv annotator_differences.tsv
-
+	@echo "Cleaning up mistake, stats files and outputs directory..."
+	rm -f mistakes*.tsv morphs*stats.tsv languages*stats.tsv annotator_differences.tsv languages*stats_extended.tsv morphs*stats_extended.tsv
+	@if [ -d "outputs" ]; then rm -f outputs/*; fi
 # Compute Inter-Annotator Agreement
 agreement:
 	@echo "Computing Inter Annotator Agreement on annotations/dev.tsv and annotations/dev_annotator2.tsv..."
-	@python3 inter_annotator.py
+	@python3  src/inter_annotator.py

@@ -3,7 +3,8 @@
 This project is part of a Bachelor thesis on morpheme origin prediction. The task is to determine an etymology sequence of languages for each morph in all words in given sentence(s).
 
 ## Overview
-
+### Source code
+Directory `src/`
 - **`main.py`**: The main script to run experiments.
 - **`utils.py`**: Contains utility functions used across the project.
 - **`baselines.py`**: Implements baseline methods for comparison.
@@ -14,7 +15,7 @@ This project is part of a Bachelor thesis on morpheme origin prediction. The tas
 
 ## Data
 
-Besides scripts the repository includes the following data:
+Besides scripts the repository includes the following data in the directory `data/`:
 
 - **`annotations/`**: Annotated files (train, dev, test) plus original SIGMORPHON 2022 data.
 - **`additional_data/`**: Supplementary data (CzEtyL etymological lexicon, affix/root dictionaries).
@@ -55,7 +56,7 @@ source MorphOriginVenv/bin/activate
 3. **Run the script with custom arguments:**
 Example:
 ```bash
-python3 main.py --enable_all --extend_train --multi_label --mlp_hidden_size=30
+python3 src/main.py --enable_all --extend_train --multi_label --mlp_hidden_size=30
 ```
    
 ## Arguments description
@@ -92,7 +93,7 @@ The primary machine learning model in this project is defined in `morph_classifi
   - You can load the trained model to disk with `--load` which loads the trained model from file `model.name + '.pkl'`. To specify path from which to load the model use `--load_model_path`
 
 - **Generating Additional Information**
-
+Files are by default generated to directory `outputs\`. The output directory can be specified using `--outputs_dir`
   - **Stats Files**  
    To specify paths to TSV files that store language- and morph- statistics for both train and test sets:
     - `--stats_lang_test`: Where to store language counts on the test set (default: `languages_test_stats.tsv`)
@@ -109,7 +110,7 @@ The primary machine learning model in this project is defined in `morph_classifi
 
 To see all available flags and parameters, run:
 ```bash
-python3 main.py --help
+python3 src/main.py --help
 ```
 
 ### Baseline Models

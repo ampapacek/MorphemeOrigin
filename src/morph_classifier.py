@@ -229,7 +229,9 @@ class MorphClassifier(Model):
                 f"All morphs were discarded because their labels' frequency < {self.min_label_freq}."
             )
         if self.verbose:
-            print(f"Removed {number_frames_before-len(df)} morphs with low occurence etymology sequences")
+            number_removed = number_frames_before-len(df)
+            if number_removed > 0:
+                print(f"Removed {number_removed} morphs with low occurence etymology sequences")
 
         # Build the list of transformers for ColumnTransformer
         transformers = []
