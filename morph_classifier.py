@@ -9,7 +9,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.preprocessing import OneHotEncoder, MultiLabelBinarizer
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import VotingClassifier
-from sklearn.svm import LinearSVC,SVC
+from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 
@@ -344,7 +344,7 @@ class MorphClassifier(Model):
                 self.fallback_pipeline = Pipeline([
                     ("preprocessor", preprocessor),
                     ("classifier", base_classifier)
-        ])
+            ])
         else:
             # Single-label: use the full label (whole sequence) as one class
             self._mlb = None
@@ -366,9 +366,11 @@ class MorphClassifier(Model):
             if classifier_type == "svm":
                 print(f"  svm_c={self.svm_c}")
             elif classifier_type == "mlp":
-                print(f"  mlp_ensemble_size={self.mlp_ensemble_size}, mlp_hidden_size={self.mlp_hidden_size}")
+                print(f"  mlp_hidden_size={self.mlp_hidden_size}")
             elif classifier_type == "lr":
                 print("  Using LogisticRegression")
+            if self.mlp_ensemble_size > 1:
+                print(f"  ensemble_size={self.mlp_ensemble_size}")
             if self.multi_label:
                 if self.use_fallback_pipeline:
                     print("  multi_label=True (using OneVsRestClassifier), with fallback single-label pipeline")
