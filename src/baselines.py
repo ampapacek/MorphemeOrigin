@@ -39,7 +39,7 @@ class MostFrequentOriginModel(Model):
     its predicted etymology is set to the most frequent sequence; otherwise, it defaults to ["ces"].
     """
     
-    def __init__(self, name: str = "MostFrequentOriginModel") -> None:
+    def __init__(self, name: str = "MostFrequentOrigin") -> None:
         super().__init__(name)
         # Dictionary mapping (morph.text, morph.morph_type) -> most frequent etymology sequence (list of str)
         self.most_freq = {}
