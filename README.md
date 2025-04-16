@@ -1,8 +1,19 @@
 # Morpheme Origin Project
 
-This project is part of a Bachelor thesis on morpheme origin prediction. The task is to determine an etymology sequence of languages for each morph in all words in given sentence(s).
+This repository is part of a Bachelor thesis on **morpheme origin prediction**. Given morphologically segmented words or sentences, it aims to determine an etymology sequence (i.e., language of origin and possible intermediate languages) for each morph.
 
 ## Overview
+
+- **Input:** Morphologically segmented text, where each word is decomposed into morphs.  
+- **Task:** Assign a list of languages (e.g., `['ces']`, `['lat','ell']`) to each morph representing from which and though which languages the word was borrowed to Czech. Just `['ces']` for native words.
+- **Example (Single Word):**  
+  ```text
+  antivirový
+    anti   → ["ell"]
+    vir    → ["deu","lat"]
+    ov     → ["ces"]
+    ý      → ["ces"]
+  ```
 ### Source code
 Directory `src/`
 - **`main.py`**: The main script to run experiments.
@@ -54,10 +65,12 @@ make venv
 source MorphOriginVenv/bin/activate
 ```
 3. **Run the script with custom arguments:**
+   
 Example:
 ```bash
-python3 src/main.py --enable_all --extend_train --multi_label --mlp_hidden_size=30
+python3 src/main.py --enable_all --extend_train --multi_label --mlp_hidden_size=40
 ```
+This enables all models (baselines + learning model) uses extended train set for the learning model using entries from etymological dictionary. Treats the target as multi labels (oposed to default predict the whole sequence at once as single class) and uses 40 neurons in hidden layer of the MLP classifier (which is used as default).
    
 ## Arguments description
 
@@ -65,8 +78,8 @@ The primary machine learning model in this project is defined in `morph_classifi
 
 - **Classifier Type**  
   Choose between:
-  - **SVM** (`--classifier_type svm`), controlled by the C parameter `--svm_c`.  
-  - **MLP** (`--classifier_type mlp`), optionally as an ensemble of MLPs via `--mlp_ensemble_size`. One hidden layer of size  `--mlp_hidden_size`, default to 100.
+  - **SVM** (`--classifier_type svm`), adjustable by the C parameter `--svm_c` and kernel used `--svm_kernel`.  
+  - **MLP** (`--classifier_type mlp`), optionally as an ensemble of MLPs via `--mlp_ensemble_size`. One hidden layer of size  `--mlp_hidden_size`, default to 30.
   - **Logistic Regression** (`--classifier_type lr`).  
 
 - **Feature Extraction**  
@@ -115,7 +128,7 @@ python3 src/main.py --help
 
 ### Baseline Models
 
-We provide four baseline models (see `baselines.py`), each offering a contrasting approach:
+We provide four baseline models (see `src/baselines.py`), each offering a contrasting approach:
 
 1. **DummyModel**  
    Always predicts `["ces"]` for any alphabetic morph. Useful as a minimal baseline.
