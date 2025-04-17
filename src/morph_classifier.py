@@ -143,7 +143,7 @@ class MorphClassifier(Model):
                 multi_label_describtion = "_multi_label"
 
 
-            self.name = f"{classifier_description}{embeding_description}{multi_label_describtion}_model"
+            self.name = f"{classifier_description}{embeding_description}{multi_label_describtion}"
         
         self.pipeline: Optional[Pipeline] = None
 
@@ -292,7 +292,7 @@ class MorphClassifier(Model):
             base_classifier = SVC(
                 kernel=self.svm_kernel,
                 C=self.svm_c,
-                max_iter=5000,
+                max_iter=1000,
                 random_state=self.random_state
             )
         elif classifier_type == "mlp":
@@ -386,6 +386,7 @@ class MorphClassifier(Model):
 
         # Fit the pipeline
         self.pipeline.fit(X, y_bin)
+        
         if self.use_fallback_pipeline and self.fallback_pipeline:
             if self.verbose:
                 print("Fitting additional fallback pipeline...")
