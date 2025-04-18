@@ -102,7 +102,9 @@ def parse_args():
     parser.add_argument("--mlp_hidden_size", type=int, default=30,
                         help="Hidden layer size for MLP classifier (default: 30).")
     parser.add_argument("--svm_c", type=float, default=1.0,
-                        help="C parameter for LinearSVC (default: 1.0).")
+                        help="C parameter for the SMC. It is inversly proportional to regularization strength. (default: 1.0).")
+    parser.add_argument("--mlp_alpha", type=float, default=0.0001,
+                        help="The alpha parameter for the mlp. It controls regularization strenght. (default: 0.0001).")
     parser.add_argument("--svm_kernel", type=str, default='rbf',
                         help="Kernel for the svm model (rbf,poly,linear,sigmoid,precomputed) (default: 'rbf').")
     parser.add_argument("--random_state", type=int, default=34867991,
@@ -367,7 +369,8 @@ def main():
             verbose=(not args.quiet),
             multi_label=args.multi_label,
             min_label_freq=args.min_seq_occurrence,
-            early_stopping=args.early_stopping
+            early_stopping=args.early_stopping,
+            mlp_alpha=args.mlp_alpha
         )
 
         if args.load and not args.load_model_path:
