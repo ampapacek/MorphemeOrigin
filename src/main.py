@@ -335,8 +335,8 @@ def main():
             sentence_count_extended,word_count_extended,morph_count_extended = count_sentences_words_morphs(train_sentences)
             if not args.quiet:
                 print(f"Statistics on extended train -- Morphs: {morph_count_extended}, Words: {word_count_extended}, Sentences: {sentence_count_extended}\n")
-        else:
-            # if the train is not extended there is no need  to remove etym sequences with low frequency
+        elif not args.multi_label:
+            # if the train is not extended and multilabel is not used there is no need to remove etym sequences with low frequency
             if args.min_seq_occurrence == 2:
                 # if the argument was kept on default set it to 1 (keep all sequences)
                 args.min_seq_occurrence = 1
