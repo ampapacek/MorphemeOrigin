@@ -12,6 +12,7 @@ and then predicts etymology using various models:
 For each enabled model, the script prints the F-score averaged over all morph instances, scores on native and borrowed morphs,
 score when grouping morphs by ther text (count each unique morph just once), and the relative error reduction compared to the dummy model baseline.
 """
+import traceback
 import time
 import sys
 import argparse
@@ -380,27 +381,42 @@ def main():
             try:
                 learning_model.load(args.load_model_path)
             except Exception as error:
-                print("Error when trying to load model from ", args.load_model_path)
-                print("The following error occured:", error)
-                print("Save the model first or call without load_model_path to train the model instead")
-                raise error
+                abort(f"Cannot load model from “{args.load_model_path}”.", error)
         else:
-            learning_model.fit(train_sentences)
+            try:
+                learning_model.fit(train_sentences)
+            except Exception as error:
+                 abort("Training failed.", error)
 
         try:
             test_model(learning_model, test_sentences_target,
                     baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet),
                     results_file=args.results_file)
-            if args.save_model_path:
-                learning_model.save(args.save_model_path)
-            elif args.save:
-                learning_model.save(learning_model.name + '.pkl')
-        # TODO: Make the excpetion handling better        
-        except Exception as e:
-            print("Terminating program after an error.")
-            print(f"The following error occured.\n{e}")
+        except Exception as err:
+            abort("Evaluation (testing of model) failed.", err)
 
 
+        save_path = (args.save_model_path if args.save_model_path else (learning_model.name + ".pkl" if args.save else None))
+        if save_path:
+            try:
+                learning_model.save(save_path)
+            except Exception as err:
+                warn(f"Could not save model to {save_path}.", err)
+
+
+
+def abort(msg: str, exc: Exception | None = None, code: int = 1) -> None:
+    """Print message + traceback (if any) and stop programme."""
+    print(f"\n{msg}", file=sys.stderr)
+    if exc is not None:
+        traceback.print_exception(exc)
+    sys.exit(code)
+
+def warn(msg: str, exc: Exception | None = None) -> None:
+    """Warning – report but keep going."""
+    print(f"{msg}", file=sys.stderr)
+    if exc is not None:
+        traceback.print_exception(exc, limit=2)
 
 if __name__ == "__main__":
     main()
