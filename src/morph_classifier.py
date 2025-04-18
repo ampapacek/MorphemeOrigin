@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.preprocessing import OneHotEncoder, MultiLabelBinarizer
+from sklearn.preprocessing import OneHotEncoder, MultiLabelBinarizer,LabelEncoder
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import VotingClassifier
 from sklearn.svm import SVC
@@ -93,10 +93,6 @@ class MorphClassifier(Model):
         If True, treats etymologies as multi-label sets. If False, treats 
         the comma-joined string as a single class label.
    
-     fallback_single_label : bool
-        If True, train both single and multi label pipelines.
-        When the multilabel pipeline predicts empty sequence use the single label as fallback.
-        Used only when multi_label=True.
     """
 
     def __init__(
@@ -120,9 +116,8 @@ class MorphClassifier(Model):
         lower_case: bool = True,
         multi_label: bool = False,
         min_label_freq: int = 2,
-        fallback_single_label: bool = False,
-        use_vowel_start_end_features: bool = True
-
+        use_vowel_start_end_features: bool = True,
+        early_stopping:bool = False
     ) -> None:
         super().__init__(name)
         if not name:
@@ -172,65 +167,14 @@ class MorphClassifier(Model):
         self.verbose = verbose
         self.lower_case = lower_case
         self.min_label_freq = min_label_freq
+        self._label_encoder:  Optional[LabelEncoder]        = None  
+        self.early_stopping = early_stopping
 
         # Multi-label
         self.multi_label = multi_label
-        self.use_fallback_pipeline = fallback_single_label
-        self._mlb: Optional[MultiLabelBinarizer] = None  # For multi-label binarizing
-        self.fallback_pipeline:Optional[Pipeline] = None
-
-    def fit(self, data: List["DataSentence"]) -> None:
-        """
-        Builds and trains the morph-level classification pipeline.
+        self._multi_label_binarizer: Optional[MultiLabelBinarizer] = None  
         
-        It flattens the training data into a DataFrame, extracting:
-            - "text": the morph text
-            - "word": the complete word text
-            - "morph_type": the string value of the morph type
-            - "morph_position": the string value of the morph position
-            - "label": comma-separated etymology (single-label) or a list if multi_label.
-        """
-        morph_rows = []
-        for sentence in data:
-            for word in sentence.words:
-                for morph in word:
-                    if morph.etymology:
-                        # Lowercase logic
-                        if self.lower_case:
-                            morph_text = morph.text.lower()
-                            word_text = word.text.lower()
-                        else:
-                            morph_text = morph.text
-                            word_text = word.text
-
-                        # Store the joined label as is. We handle multi-label below.
-                        full_label = ",".join(morph.etymology)
-
-                        morph_rows.append({
-                            "text": morph_text,
-                            "word": word_text,
-                            "morph_type": morph.morph_type.value,
-                            "morph_position": morph.morph_position.value,
-                            "label": full_label
-                        })
-
-        df = pd.DataFrame(morph_rows)
-        if df.empty:
-            raise ValueError("No training data available (no morphs with non-empty etymology).")
-        
-        # Discard low-frequency labels
-        label_counts = df["label"].value_counts()
-        number_frames_before = len(df)
-        df = df[df["label"].map(label_counts) >= self.min_label_freq]
-        if df.empty:
-            raise ValueError(
-                f"All morphs were discarded because their labels' frequency < {self.min_label_freq}."
-            )
-        if self.verbose:
-            number_removed = number_frames_before-len(df)
-            if number_removed > 0:
-                print(f"Removed {number_removed} morphs with low occurence etymology sequences")
-
+    def _build_preprocessor(self) -> ColumnTransformer:
         # Build the list of transformers for ColumnTransformer
         transformers = []
 
@@ -284,9 +228,10 @@ class MorphClassifier(Model):
                 ["text"]
             ))
 
-        preprocessor = ColumnTransformer(transformers=transformers)
-
-        # Choose the base classifier based on user selection
+        return ColumnTransformer(transformers=transformers)
+  
+    def _make_base_classifier(self):
+         # Choose the base classifier based on user selection
         classifier_type = self.classifier_type.lower()
         if classifier_type == "svm":
             base_classifier = SVC(
@@ -302,7 +247,8 @@ class MorphClassifier(Model):
                     hidden_layer_sizes=[self.mlp_hidden_size],
                     max_iter=400,
                     verbose=False,
-                    random_state=self.random_state
+                    random_state=self.random_state,
+                    early_stopping=self.early_stopping,
                 )
             else:
                 mlp_estimators = []
@@ -330,71 +276,102 @@ class MorphClassifier(Model):
         else:
             raise ValueError(f"Unknown classifier_type: {self.classifier_type}")
 
-        # If multi_label, we wrap the base_classifier in a OneVsRestClassifier
-        # and do multi-label binarization for y.
+        return base_classifier
+
+    def _sentences_to_dataframe(
+            self,
+            sentences: List["DataSentence"],
+            lowercase: bool = True
+    ) -> pd.DataFrame:
+        """Flatten a list of DataSentence objects into a pandas DataFrame."""
+        rows: list[dict] = []
+        for sentence in sentences:
+            for word in sentence.words:
+                for morph in word:
+                    if not morph.etymology:        # skip unlabeled morphs
+                        continue
+                    rows.append({
+                        "text": morph.text.lower() if lowercase else morph.text,
+                        "word": word.text.lower() if lowercase else word.text,
+                        "morph_type": morph.morph_type.value,
+                        "morph_position": morph.morph_position.value,
+                        "label": ",".join(morph.etymology)
+                    })
+        return pd.DataFrame(rows)
+
+    def fit(self, data: List["DataSentence"]) -> None:
+        """
+        Builds and trains the morph-level classification pipeline.
+        
+        It flattens the training data into a DataFrame, extracting:
+            - "text": the morph text
+            - "word": the complete word text
+            - "morph_type": the string value of the morph type
+            - "morph_position": the string value of the morph position
+            - "label": comma-separated etymology (single-label) or a list if multi_label.
+        """
+        if self.verbose:
+            print(f"Fiting model: {self.name}")
+        df_train = self._sentences_to_dataframe(data,lowercase=self.lower_case)
+
+
+        if df_train.empty:
+            raise ValueError("No training data with non‑empty etymology.")
+        
+        # Discard low-frequency labels
+        label_counts = df_train["label"].value_counts()
+        number_frames_before = len(df_train)
+        df_train = df_train[df_train["label"].map(label_counts) >= self.min_label_freq]
+        if df_train.empty:
+            raise ValueError(
+                f"All morphs were discarded because their labels' frequency < {self.min_label_freq}."
+            )
+       
+        if self.verbose:
+            number_removed = number_frames_before-len(df_train)
+            if number_removed > 0:
+                print(f"Removed {number_removed} morphs with low occurence etymology sequences")
+        
+  
+
+        base_classifier = self._make_base_classifier()        
+
+        preprocessor = self._build_preprocessor()
+
         if self.multi_label:
-            self._mlb = MultiLabelBinarizer()
-            # Convert the comma-separated string, for example "lat,ell" to list ["lat", "ell"]
-            y_list = [label_str.split(",") for label_str in df["label"]]
-            y_bin = self._mlb.fit_transform(y_list)
+            self._multi_label_binarizer = MultiLabelBinarizer()
+            y_train = self._multi_label_binarizer.fit_transform(df_train["label"].str.split(","))
             final_classifier = OneVsRestClassifier(base_classifier)
-            
-            if self.use_fallback_pipeline: # prepare another pipeline single-label classifier in case of empty prediction
-                y_bin_fallback =  df["label"]
-                self.fallback_pipeline = Pipeline([
-                    ("preprocessor", preprocessor),
-                    ("classifier", base_classifier)
-            ])
+
         else:
-            # Single-label: use the full label (whole sequence) as one class
-            self._mlb = None
-            y_bin = df["label"]
+            self._label_encoder = LabelEncoder()
+            y_train = self._label_encoder.fit_transform(df_train["label"])
             final_classifier = base_classifier
 
-        # Create the pipeline
-        self.pipeline = Pipeline([
-            ("preprocessor", preprocessor),
-            ("classifier", final_classifier)
-        ])
 
-        # Separate features from the dataframe
-        X = df[["text", "word", "morph_type", "morph_position"]]
 
+        X_train = df_train[["text", "word", "morph_type", "morph_position"]]
+        Xt_train = preprocessor.fit_transform(X_train)      
         if self.verbose:
-            print(f"Fitting MorphClassifier {self.name} with parameters:")
+            print("Shape of transformed data:", Xt_train.shape)
+
+            print(f"Parameters:")
             print(f"  classifier_type={self.classifier_type}")
-            if classifier_type == "svm":
+            if self.classifier_type.lower() == "svm":
                 print(f"  svm_c={self.svm_c}")
-            elif classifier_type == "mlp":
+            elif self.classifier_type.lower() == "mlp":
                 print(f"  mlp_hidden_size={self.mlp_hidden_size}")
-            elif classifier_type == "lr":
+            elif self.classifier_type.lower() == "lr":
                 print("  Using LogisticRegression")
             if self.mlp_ensemble_size > 1:
                 print(f"  ensemble_size={self.mlp_ensemble_size}")
-            if self.multi_label:
-                if self.use_fallback_pipeline:
-                    print("  multi_label=True (using OneVsRestClassifier), with fallback single-label pipeline")
-                else:
-                    print("  multi_label=True (using OneVsRestClassifier)")
+            if self.multi_label:   
+                 print("  multi_label=True (using OneVsRestClassifier)")
             else:
                 print("  multi_label=False (single-label)")
-
-        # Show shape after preprocessing (if verbose)
-        X_transformed = self.pipeline.named_steps["preprocessor"].fit_transform(X)
-        if self.verbose:
-            print("Feature matrix shape after preprocessing:", X_transformed.shape)
-
-        # Fit the pipeline
-        self.pipeline.fit(X, y_bin)
-        
-        if self.use_fallback_pipeline and self.fallback_pipeline:
-            if self.verbose:
-                print("Fitting additional fallback pipeline...")
-            self.fallback_pipeline.fit(X,y_bin_fallback)
-
-        if self.verbose:
-            print(f"Training complete for model {self.name}")
-
+  
+        self.pipeline = Pipeline([("preprocessor", preprocessor), ("classifier", final_classifier)])
+        final_classifier.fit(Xt_train,y_train)
 
     def predict(self, data: List["DataSentence"]) -> List["DataSentence"]:
         """
@@ -437,21 +414,17 @@ class MorphClassifier(Model):
                             bin_pred = self.pipeline.predict(df_morph)
                             # bin_pred is shape (1, n_classes) => a single row
                             # inverse_transform returns a list of tuples or lists
-                            label_list = self._mlb.inverse_transform(bin_pred)
+                            label_list = self._multi_label_binarizer.inverse_transform(bin_pred)
                             # label_list is something like [("AA", "BB")]
                             # Convert that to a Python list of strings
                             morph.etymology = list(label_list[0])  # the first (and only) row
                             if morph.etymology == []:
-                                # The classifier returned an empty sequence
-                                if self.use_fallback_pipeline and self.fallback_pipeline:
-                                    # Use fallback single pipeline
-                                    morph.etymology = (self.fallback_pipeline.predict(df_morph)[0]).split(',')
-                                else:
-                                    # Predict ['ces']
-                                    morph.etymology = ['ces']
+                                # The classifier returned an empty sequence -> Predict ['ces']
+                                morph.etymology = ['ces']
                         else:
                             # Single-label => pipeline outputs a single string
                             pred_label = self.pipeline.predict(df_morph)[0]
+                            pred_label = self._label_encoder.inverse_transform([pred_label])[0]
                             morph.etymology = pred_label.split(",")
                     else:
                         morph.etymology = []
@@ -470,8 +443,7 @@ class MorphClassifier(Model):
         # Store all neccesery parts (pipelines and mlb binarizer) and flags into dict
         objects_to_save = {
             "pipeline": self.pipeline,
-            'fallback_pipeline': self.fallback_pipeline,
-            "mlb": self._mlb,
+            "mlb": self._multi_label_binarizer,
             'name' :self.name,
             'multi_label' : self.multi_label,
             'use_word_embedd' : self.use_word_embedding,
@@ -481,6 +453,7 @@ class MorphClassifier(Model):
             'use_char_ngrams' : self.use_char_ngrams,
             'use_morph_position' : self.use_morph_position,
             'use_vowels' : self.use_vowel_start_end_features,
+            "label_encoder": self._label_encoder,     
         }
 
         with open(filename, "wb") as f:
@@ -496,14 +469,14 @@ class MorphClassifier(Model):
         ensure fasttext_model_path is set correctly for inference.
         """
         with open(filename, "rb") as f:
-            saved_data = pickle.load(f)
+            saved_data:dict = pickle.load(f)
 
         self.pipeline = saved_data["pipeline"]
-        self._mlb = saved_data["mlb"]
-        self.fallback_pipeline = saved_data["fallback_pipeline"]
+        self._multi_label_binarizer = saved_data["mlb"]
         self.name = saved_data["name"]
         self.multi_label = saved_data['multi_label']
-
+        self._label_encoder = saved_data.get("label_encoder")  
+        
         # feature flags
         self.use_word_embedding = saved_data.get("use_word_embedd", self.use_word_embedding)
         self.use_morph_embedding = saved_data.get("use_morph_embedd", self.use_morph_embedding)
