@@ -1090,7 +1090,7 @@ Podle informací o nemovitosti jak nám je sdělil náš čtenář jedna pražsk
     čtenář
         čt	R	ces
         en	D	ces
-        ář	D	ces
+        ář	D	lat
     jedna
         jedn	R	ces
         a	I	ces
@@ -1686,8 +1686,8 @@ Je tu pro vás připravena rubrika Daňový poradce
 
 Kontakt J G daňové poradenství Norská 12 101 00 Praha 10 tel 02 73 89 59
     Kontakt
-        Kon	D	lat
-        takt	R	lat
+        Kon	D	deu,lat
+        takt	R	deu,lat
     J
         J	R	
     G
@@ -2053,7 +2053,7 @@ Lidé prožívají nebývale nervózní dobu
 Citát
     Citát
         Cit	R	lat
-        át	D	ces
+        át	D	lat
 
 Za mimořádný výkon
     Za
