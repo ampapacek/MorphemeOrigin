@@ -208,7 +208,7 @@ def test_model(
             improvement = relative_error_reduction(baseline_f1, f_score)
         if verbose:
             elapsed = time.time() - start_time
-            print(f"Predictions computed and evaluated. Total time {elapsed:.2f} s\n")
+            print(f"Predictions computed and evaluated after {elapsed:.2f} s\n")
             print("Results:")
             print(f"Standard (averaged per instance) F-score: {f_score:.1f} %")
             if improvement is not None:
@@ -387,7 +387,10 @@ def main():
                 abort(f"Cannot load model from “{args.load_model_path}”.", error)
         else:
             try:
+                start_time = time.time()
                 learning_model.fit(train_sentences)
+                if not args.quiet:
+                    print(f"Model trained after {time.time()-start_time:.1f} seconds")
             except Exception as error:
                  abort("Training failed.", error)
 
