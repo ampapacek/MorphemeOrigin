@@ -144,11 +144,17 @@ class MorphClassifier(Model):
 
         # Classifier options
         self.classifier_type = classifier_type
-        self.mlp_ensemble_size = mlp_ensemble_size
         self.mlp_hidden_size = mlp_hidden_size
         self.svm_c = svm_c
         self.svm_kernel = svm_kernel
         self.random_state = random_state
+        if not multi_label or mlp_ensemble_size == 1:
+            self.mlp_ensemble_size = mlp_ensemble_size
+        else:
+            self.mlp_ensemble_size = 1
+            if verbose:
+                print("Ensambles cannot be used in multi label setting. Using single classifier.")
+
 
         # Feature flags
         self.use_char_ngrams = use_char_ngrams
