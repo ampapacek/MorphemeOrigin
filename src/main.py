@@ -209,13 +209,13 @@ def test_model(
             print(f"Predictions computed and evaluated. Total time {elapsed:.2f} s\n")
             print("Results:")
             print(f"Standard (averaged per instance) F-score: {f_score:.1f} %")
+            if improvement is not None:
+                print(f"Relative Error Reduction vs. baseline: {improvement:.1f} %")
             # print(f"Micro F-score:                         {f_score_micro:.1f} %")
             print(f"F-score on native morphs:              {f_score_on_native:.1f} %")
             print(f"F-score on borrowed morphs:            {f_score_on_borrowed:.1f} %")
             print(f"Grouped by unique morph text F-score:  {f_score_grouped:.1f} %")
-            if improvement is not None:
-                print(f"Relative Error Reduction vs. baseline: {improvement:.1f} %\n")
-        
+            print()
         # If a results_file was given, append a TSV line with the metrics (no header)
         if results_file:
             directory = os.path.dirname(results_file)
