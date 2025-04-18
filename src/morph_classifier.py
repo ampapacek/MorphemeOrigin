@@ -117,7 +117,8 @@ class MorphClassifier(Model):
         multi_label: bool = False,
         min_label_freq: int = 2,
         use_vowel_start_end_features: bool = True,
-        early_stopping:bool = False
+        early_stopping:bool = False,
+        mlp_alpha:float = 0.0001
     ) -> None:
         super().__init__(name)
         if not name:
@@ -175,6 +176,7 @@ class MorphClassifier(Model):
         self.min_label_freq = min_label_freq
         self._label_encoder:  Optional[LabelEncoder]        = None  
         self.early_stopping = early_stopping
+        self.mlp_alpha = mlp_alpha
 
         # Multi-label
         self.multi_label = multi_label
@@ -255,6 +257,7 @@ class MorphClassifier(Model):
                     verbose=False,
                     random_state=self.random_state,
                     early_stopping=self.early_stopping,
+                    alpha=self.mlp_alpha
                 )
             else:
                 mlp_estimators = []
