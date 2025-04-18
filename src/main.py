@@ -106,6 +106,8 @@ def parse_args():
                         help="Kernel for the svm model (rbf,poly,linear,sigmoid,precomputed) (default: 'rbf').")
     parser.add_argument("--random_state", type=int, default=34867991,
                         help="Random seed for the MorphClassifier (default: 34867991).")
+    parser.add_argument("--early_stopping", action="store_true",
+                        help="Sets 10 % of data aside for evaluation. Stop training when the loss doesnt improve on the evluation set.")
     
     parser.add_argument("--save_model_path", type=str, default=None,
                         help="Path where to save the trained model. Automaticly enables loading. (default: empty => dont save model).")
@@ -363,8 +365,10 @@ def main():
             lower_case=(not args.keep_case),
             verbose=(not args.quiet),
             multi_label=args.multi_label,
-            min_label_freq=args.min_seq_occurrence
+            min_label_freq=args.min_seq_occurrence,
+            early_stopping=args.early_stopping
         )
+
         if args.load and not args.load_model_path:
             args.load_model_path = learning_model.name + '.pkl'
         if args.mistakes_file == None and args.print_mistakes:
