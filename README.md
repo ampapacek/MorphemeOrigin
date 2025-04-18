@@ -101,6 +101,9 @@ The primary machine learning model in this project is defined in `morph_classifi
 - **Case Normalization**  
   - Control whether text is lowercased. Default is to lower the case of all text. Use `--keep_case` to disable this.
 
+- **Early Stopping**  
+  -  If enabled sets aside 10 % of training data and use it for evaluation. Stop training when the model is not improving on this evaluation set. Use `--early_stopping` to enable this.
+
 - **Saving & Loading**  
   - You can save the trained model to disk with `--save` which saves the trained model to file `model.name + '.pkl'`. To specify path where to save model use `--save_model_path`
   - You can load the trained model to disk with `--load` which loads the trained model from file `model.name + '.pkl'`. To specify path from which to load the model use `--load_model_path`
