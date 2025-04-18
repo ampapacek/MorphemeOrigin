@@ -182,7 +182,8 @@ def test_model(
     """
     start_time = time.time()
     if model_name == None: model_name = model.name
-    print(f"----- {model_name} -----")
+    if verbose:
+        print(f"----- {model_name} -----")
     try:
         # Remove targets from the data to simulate unlabeled data
         test_data = remove_targets(target_data)
@@ -246,7 +247,10 @@ def main():
     stats_languages_test_file = os.path.join(args.outputs_dir, args.stats_lang_test)
     stats_morphs_train_file = os.path.join(args.outputs_dir, args.stats_morphs_train)
     stats_morphs_test_file = os.path.join(args.outputs_dir, args.stats_morphs_test)
-    args.results_file = os.path.join(args.outputs_dir, args.results_file)
+    if args.results_file and args.results_file != "None":
+        args.results_file = os.path.join(args.outputs_dir, args.results_file)
+    else:
+        args.results_file = None
 
     if args.results_file:
         directory = os.path.dirname(args.results_file)
@@ -284,10 +288,11 @@ def main():
     dummy_model = DummyModel('DummyCesModel')
 
     dummy_verbose = args.enable_dummy or args.enable_baselines or args.enable_all # if its enable run as verbose, else run with quiet to get baseline f_score
+    results_dummy = args.results_file if dummy_verbose else None
     mistakes_file = None
     if args.print_mistakes:
         mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{dummy_model.name}.tsv")
-    dummy_result = test_model(dummy_model,test_sentences_target,file_mistakes=mistakes_file,verbose=dummy_verbose,results_file=args.results_file)
+    dummy_result = test_model(dummy_model,test_sentences_target,file_mistakes=mistakes_file,verbose=dummy_verbose,results_file=results_dummy)
     baseline_f1 = dummy_result['f1score_instance']
 
     if args.enable_mfo or args.enable_baselines or args.enable_all:
