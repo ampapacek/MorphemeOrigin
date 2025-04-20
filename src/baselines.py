@@ -4,6 +4,7 @@ from data_sentece import DataSentence,Word,Morph
 from model import Model
 import requests
 import copy
+import pickle
 import urllib.request
 import urllib.error
 
@@ -84,6 +85,20 @@ class MostFrequentOriginModel(Model):
                     morph.etymology = ["ces"]
             predictions.append(sent_copy)
         return predictions
+
+    def save(self, filepath: str) -> None:
+        """
+        Saves the self.most_freq dictionary to a file using pickle.
+        """
+        with open(filepath, "wb") as f:
+            pickle.dump(self.most_freq, f)
+
+    def load(self, filepath: str) -> None:
+        """
+        Loads the self.most_freq dictionary from a pickle file.
+        """
+        with open(filepath, "rb") as f:
+            self.most_freq = pickle.load(f)
 
 def load_etym_dict(filepath: str) -> dict[str, list[str]]:
     """
