@@ -101,10 +101,10 @@ def load_annotations(filepath: str, indent: int = 4) -> List[DataSentence]:
             elif line.startswith(" " * (2 * indent)):
                 parts = stripped_line.split("\t")
                 morph_text = parts[0] if len(parts) >= 1 else ""
-                if len(parts) >= 3:
+                if len(parts) >= 3 or (len(parts) == 2 and parts[1].strip() in ['R','D','I']):
                     morph_type_field = parts[1].strip()
                     morph_type = Morph.MorphType(morph_type_field)
-                    etymology_field = parts[2].strip()
+                    etymology_field = parts[2].strip() if len(parts) >= 3 else ''
                     morph_etymology = [code.strip() for code in etymology_field.split(',')] if etymology_field else []
                 elif len(parts) == 2 and parts[1].strip():
                     etymology_field = parts[1].strip()
