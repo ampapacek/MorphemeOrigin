@@ -48,12 +48,12 @@ def parse_args():
                         help="Path to the training file (default: data/annotations/train.tsv)")
     parser.add_argument("--target_file", type=str, default="data/annotations/dev.tsv",
                         help="Path to the dev/test file (default: data/annotations/dev.tsv)")
-    parser.add_argument("--root_etym_file", type=str, default="data/additional_data/roots_etymology.tsv",
-                        help="Path to the root etymology file (default: data/additional_data/roots_etymology.tsv)")
-    parser.add_argument("--word_etym_file", type=str, default="data/additional_data/czetyl_max.tsv",
-                        help="Path to the word-level etymology file (default: data/additional_data/czetyl_max.tsv)")
-    parser.add_argument("--affixes_file", type=str, default="data/additional_data/affixes_etymology.tsv",
-                        help="Path to the affixes file (default: data/additional_data/affixes_etymology.tsv)")
+    parser.add_argument("--root_etym_file", type=str, default="data/etymological_data/roots_etymology.tsv",
+                        help="Path to the root etymology file (default: data/etymological_data/roots_etymology.tsv)")
+    parser.add_argument("--word_etym_file", type=str, default="data/etymological_data/czetyl_max.tsv",
+                        help="Path to the word-level etymology file (default: data/etymological_data/czetyl_max.tsv)")
+    parser.add_argument("--affixes_file", type=str, default="data/etymological_data/affixes_etymology.tsv",
+                        help="Path to the affixes file (default: data/etymological_data/affixes_etymology.tsv)")
 
     # File paths for stats
     parser.add_argument("--outputs_dir", type=str, default="outputs",
