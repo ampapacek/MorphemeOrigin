@@ -26,6 +26,7 @@ from utils import (
     write_morph_statistics,
     count_sentences_words_morphs,
     single_morph_sentences_from_dict,
+    pprint_sentences
 )
 from baselines import (
     DummyModel,
@@ -75,6 +76,8 @@ def parse_args():
                         help="Print statistics for morphs and language sequences in both the train and test sets. (default: False)")
     parser.add_argument("--print_mistakes", action="store_true",
                         help="Print mistakes made by the models on test set. (default: False)")
+    parser.add_argument("--predictions_file", type=str, default="predictions.tsv",
+                        help="File to store the sentences with predicted etymology from the learning model. (default: 'predictions.tsv')")
     # Model toggles
     parser.add_argument("--enable_dummy", action="store_true",
                         help="Print results for the dummy model. (Always run internally for baseline; prints only if True.)")
@@ -168,7 +171,8 @@ def test_model(
     file_mistakes: str = None,
     model_name: str = None,
     verbose:bool = True,
-    results_file: str = None
+    results_file: str = None,
+    predictions_file:str = None
 ) -> dict[str,float]:
     """
     Take the model (already fited) makes predictions, evaluates, and prints results if verbose enabled and to separate file if results_file is specified.
@@ -195,6 +199,13 @@ def test_model(
         if verbose:
             print(f"Computing predictions on test data...")
         predictions = model.predict(test_data)
+
+        if predictions_file:
+            directory = os.path.dirname(predictions_file)
+            if directory: 
+                os.makedirs(directory, exist_ok=True)
+            pprint_sentences(predictions,predictions_file)
+                
 
         # Evaluate
         evaluation_results = evaluate(predictions, target_data, instance_eval=True,micro_eval=True,native_borrowed_eval=True,group_by_text_eval=True, file_mistakes=file_mistakes)
@@ -256,6 +267,12 @@ def main():
         args.results_file = os.path.join(args.outputs_dir, args.results_file)
     else:
         args.results_file = None
+    
+    if args.predictions_file and args.predictions_file != "None":
+        args.predictions_file = os.path.join(args.outputs_dir, args.predictions_file)
+    else:
+        args.predictions_file = None
+
 
     if args.results_file:
         directory = os.path.dirname(args.results_file)
@@ -397,7 +414,7 @@ def main():
         try:
             test_model(learning_model, test_sentences_target,
                     baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet),
-                    results_file=args.results_file)
+                    results_file=args.results_file, predictions_file=args.predictions_file)
         except Exception as err:
             abort("Evaluation (testing of model) failed.", err)
 
