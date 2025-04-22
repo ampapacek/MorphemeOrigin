@@ -82,13 +82,13 @@ def parse_args():
     parser.add_argument("--enable_dummy", action="store_true",
                         help="Print results for the dummy model. (Always run internally for baseline; prints only if True.)")
     parser.add_argument("--enable_mfo", action="store_true",
-                        help="Enable MostFrequentOriginModel evaluation.")
+                        help="Enable MostFrequentOriginModel prediction and evaluation.")
     parser.add_argument("--enable_morph_dict", action="store_true",
-                        help="Enable MorphDictModel evaluation.")
+                        help="Enable MorphDictModel prediction and evaluation.")
     parser.add_argument("--enable_word_dict", action="store_true",
-                        help="Enable WordDictModel evaluation.")
+                        help="Enable WordDictModel prediction and evaluation.")
     parser.add_argument("--enable_morph_classifier", action="store_true",
-                        help="Enable MorphClassifier evaluation.")
+                        help="Enable MorphClassifier prediction and evaluation.")
     parser.add_argument("--enable_all", action="store_true",
                         help="Enable all baseline models plus the learning model MorphClassifier.")
     parser.add_argument("--enable_baselines", action="store_true",
@@ -115,6 +115,7 @@ def parse_args():
     parser.add_argument("--early_stopping", action="store_true",
                         help="Sets 10 % of data aside for evaluation. Stop training when the loss doesnt improve on the evluation set.")
     
+    # saving and loading
     parser.add_argument("--save_model_path", type=str, default=None,
                         help="Path where to save the trained model. Automaticly enables loading. (default: empty => dont save model).")
     parser.add_argument("--load_model_path", type=str, default=None,
@@ -160,7 +161,7 @@ def parse_args():
                         help="Disables printing of additional information like timing.")
 
     parser.add_argument("--binary", action="store_true",
-                        help="Enables binary classification. Just Native or Borrowed. (default: False)" )
+                        help="Switches to binary classification. Just Native or Borrowed instead of the individual languages. (default: False)" )
 
     parser.add_argument("--random_state", type=int, default=34867991,
                         help="Random seed for the MorphClassifier (default: 34867991).")
