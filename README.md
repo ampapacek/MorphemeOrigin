@@ -23,13 +23,14 @@ Directory `src/`
 - **`model.py`**: Parent class for the models.
 - **`morph_classifier.py`**: Contains the machine learning model for classification.
 - **`inter_annotator.py`**: Measures inter-annotator agreement.
+- **`prepare_for_annotation.py`**: Processes file of segmented text and prints it in format suitable for annotation.
 
 ## Data
 
 Besides scripts the repository includes the following data in the directory `data/`:
 
 - **`annotations/`**: Annotated files (train, dev, test) plus original SIGMORPHON 2022 data.
-- **`additional_data/`**: Supplementary data (CzEtyL etymological lexicon, affix/root dictionaries).
+- **`etymological_data/`**: Supplementary data (CzEtyL etymological lexicon, affix/root dictionaries).
   
 ## How to Use
 
