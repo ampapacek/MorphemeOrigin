@@ -118,7 +118,8 @@ class MorphClassifier(Model):
         min_label_freq: int = 2,
         use_vowel_start_end_features: bool = True,
         early_stopping:bool = False,
-        mlp_alpha:float = 0.0001
+        mlp_alpha:float = 0.0001,
+        mlp_max_iter:int = 400
     ) -> None:
         super().__init__(name)
         if not name:
@@ -146,6 +147,8 @@ class MorphClassifier(Model):
         # Classifier options
         self.classifier_type = classifier_type
         self.mlp_hidden_size = mlp_hidden_size
+        self.mlp_alpha = mlp_alpha
+        self.mlp_max_iter = mlp_max_iter
         self.svm_c = svm_c
         self.svm_kernel = svm_kernel
         self.random_state = random_state
@@ -176,7 +179,6 @@ class MorphClassifier(Model):
         self.min_label_freq = min_label_freq
         self._label_encoder:  Optional[LabelEncoder]        = None  
         self.early_stopping = early_stopping
-        self.mlp_alpha = mlp_alpha
 
         # Multi-label
         self.multi_label = multi_label
@@ -253,7 +255,7 @@ class MorphClassifier(Model):
             if self.mlp_ensemble_size <= 1:
                 base_classifier = MLPClassifier(
                     hidden_layer_sizes=[self.mlp_hidden_size],
-                    max_iter=400,
+                    max_iter=self.mlp_max_iter,
                     verbose=False,
                     random_state=self.random_state,
                     early_stopping=self.early_stopping,
