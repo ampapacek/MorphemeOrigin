@@ -108,10 +108,10 @@ def parse_args():
                         help="C parameter for the SMC. It is inversly proportional to regularization strength. (default: 1.0).")
     parser.add_argument("--mlp_alpha", type=float, default=0.0001,
                         help="The alpha parameter for the mlp. It controls regularization strenght. (default: 0.0001).")
+    parser.add_argument("--mlp_max_iter", type=int, default=400,
+                        help="The maximum number of iterations (epochs) of training. (default: 400).")
     parser.add_argument("--svm_kernel", type=str, default='rbf',
                         help="Kernel for the svm model (rbf,poly,linear,sigmoid,precomputed) (default: 'rbf').")
-    parser.add_argument("--random_state", type=int, default=34867991,
-                        help="Random seed for the MorphClassifier (default: 34867991).")
     parser.add_argument("--early_stopping", action="store_true",
                         help="Sets 10 % of data aside for evaluation. Stop training when the loss doesnt improve on the evluation set.")
     
@@ -162,6 +162,8 @@ def parse_args():
     parser.add_argument("--binary", action="store_true",
                         help="Enables binary classification. Just Native or Borrowed. (default: False)" )
 
+    parser.add_argument("--random_state", type=int, default=34867991,
+                        help="Random seed for the MorphClassifier (default: 34867991).")
     return parser.parse_args()
 
 def test_model(
@@ -387,7 +389,8 @@ def main():
             multi_label=args.multi_label,
             min_label_freq=args.min_seq_occurrence,
             early_stopping=args.early_stopping,
-            mlp_alpha=args.mlp_alpha
+            mlp_alpha=args.mlp_alpha,
+            mlp_max_iter=args.mlp_max_iter
         )
 
         if args.load and not args.load_model_path:
