@@ -80,7 +80,7 @@ The primary machine learning model in this project is defined in `morph_classifi
 - **Classifier Type**  
   Choose between:
   - **SVM** (`--classifier_type svm`), adjustable by the C parameter `--svm_c` and kernel used `--svm_kernel`.  
-  - **MLP** (`--classifier_type mlp`), optionally as an ensemble of MLPs via `--mlp_ensemble_size`. One hidden layer of size  `--mlp_hidden_size`, default to 30.
+  - **MLP** (`--classifier_type mlp`), optionally as an ensemble of MLPs via `--mlp_ensemble_size`. One hidden layer of size  `--mlp_hidden_size`, default to 30. Additionaly regularizaton can be controled using `--mlp_alpha` and maximum number of iterations (epochs) to run with `--mlp_max_iter`
   - **Logistic Regression** (`--classifier_type lr`).  
 
 - **Feature Extraction**  
