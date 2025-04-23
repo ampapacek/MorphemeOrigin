@@ -43,12 +43,13 @@ class MorphClassifier(Model):
     mlp_ensemble_size : int
         Number of MLPs in the ensemble (only relevant if classifier_type="mlp").
         If 1, use a single MLP. If >1, create a VotingClassifier of that many MLPs.
+        (only relevant if classifier_type="mlp" and multilabel=False).
 
     mlp_hidden_size : int
-        Size of the hidden layer in MLP(s). (Single-layer only.)
+        Size of the one and only hidden layer in MLP(s). (only relevant if classifier_type="mlp").
 
     svm_c : float
-        C parameter for SVM (only relevant if classifier_type="svm").
+        C parameter for SVM inversly proportionate to regularization strength (only relevant if classifier_type="svm").
 
     svm_kernel : str
         Kernel to use for SVM (only relevant if classifier_type="svm").
@@ -78,7 +79,7 @@ class MorphClassifier(Model):
         Whether to include information if the morph starts and/or ends with a vowel.
 
     embedding_dimension : int
-        Dimension of the fastText embeddings.
+        Dimension of the fastText embeddings. (only relevant if word or morph embeddings are used).
 
     fasttext_model_path : str
         Path to the fastText .bin model file.
@@ -93,6 +94,11 @@ class MorphClassifier(Model):
         If True, treats etymologies as multi-label sets. If False, treats 
         the comma-joined string as a single class label.
    
+    mlp_alpha : float
+        Alpha parameter for MLP controlos regularization strength (only relevant if classifier_type="mlp").
+    mlp_max_iter : int
+        Maximum iterations (epochs) to run. If the algorithm does not converge earlier. (only relevant if classifier_type="mlp").
+            
     """
 
     def __init__(
