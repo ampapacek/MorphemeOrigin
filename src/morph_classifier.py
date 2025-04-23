@@ -95,7 +95,7 @@ class MorphClassifier(Model):
         the comma-joined string as a single class label.
    
     mlp_alpha : float
-        Alpha parameter for MLP controlos regularization strength (only relevant if classifier_type="mlp").
+        Alpha parameter for MLP controls regularization strength (only relevant if classifier_type="mlp").
     mlp_max_iter : int
         Maximum iterations (epochs) to run. If the algorithm does not converge earlier. (only relevant if classifier_type="mlp").
             
@@ -133,7 +133,7 @@ class MorphClassifier(Model):
             if  classifier_type == 'mlp':
                 classifier_description += f"_{mlp_hidden_size}"
             if mlp_ensemble_size > 1:
-                classifier_description += f"_ensamble{mlp_ensemble_size}"
+                classifier_description += f"_ensemble{mlp_ensemble_size}"
             embeding_description = ''
             if use_word_embedding:
                 embeding_description = '_word_emb'
@@ -163,7 +163,7 @@ class MorphClassifier(Model):
         else:
             self.mlp_ensemble_size = 1
             if verbose:
-                print("Ensambles cannot be used in multi label setting. Using single classifier.")
+                print("Ensembles cannot be used in multi label setting. Using single classifier.")
 
 
         # Feature flags
