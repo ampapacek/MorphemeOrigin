@@ -5,6 +5,52 @@ from typing import List, Tuple, Optional, Dict
 from data_sentece import DataSentence,Word,Morph
 from collections import Counter, defaultdict
 
+
+def deduce_position(word: Word) -> None:
+    """
+    Deduce the position of each morph in a word (prefix, root, suffix, interfix),
+    based on morph type annotations.
+
+    Rules:
+    - If no morph is explicitly marked as ROOT, assume the first morph is the root.
+    - If exactly one root is found:
+        - Morphs before it → PREFIX
+        - That morph → ROOT
+        - Morphs after it → SUFFIX
+    - If multiple roots are found:
+        - Morphs before the first root → PREFIX
+        - All root indices → ROOT
+        - Morphs between first and last root (that aren't roots) → INTERFIX
+        - Morphs after the last root → SUFFIX
+    """
+    if not word:
+        return
+    root_indices = [i for i, m in enumerate(word) if m.morph_type == m.__class__.MorphType.ROOT]
+    # If no root found set the first morph's position as root (usually prepositions and conjuctions of just one morph)
+    if len(root_indices) == 0:
+        root_indices = [0]
+    if len(root_indices) == 1:
+        root_index = root_indices[0]
+        for i, m in enumerate(word):
+            if i < root_index:
+                m.morph_position = m.__class__.MorphPosition.PREFIX
+            elif i == root_index:
+                m.morph_position = m.__class__.MorphPosition.ROOT
+            else:
+                m.morph_position = m.__class__.MorphPosition.SUFFIX
+    elif len(root_indices) > 1:
+        first_root = root_indices[0]
+        last_root = root_indices[-1]
+        for i in range(0, first_root):
+            word[i].morph_position = word[i].__class__.MorphPosition.PREFIX
+        for i in root_indices:
+            word[i].morph_position = word[i].__class__.MorphPosition.ROOT
+        for i in range(first_root + 1, last_root):
+            if i not in root_indices:
+                word[i].morph_position = word[i].__class__.MorphPosition.INTERFIX
+        for i in range(last_root + 1, len(word)):
+            word[i].morph_position = word[i].__class__.MorphPosition.SUFFIX
+
 def load_annotations(filepath: str, indent: int = 4) -> List[DataSentence]:
     """
     Reads an annotation file and returns a list of DataSentence objects.
@@ -33,41 +79,7 @@ def load_annotations(filepath: str, indent: int = 4) -> List[DataSentence]:
     def flush_word():
         nonlocal current_word, current_words
         if current_word is not None:
-            # Deduce morph positions based on morph types.
-            root_indices = [i for i, m in enumerate(current_word) if m.morph_type == m.__class__.MorphType.ROOT]
-            # If no root found set the first morph's position as root (usually prepositions and conjuctions of just one morph)
-            if len(root_indices) == 0:
-                root_indices = [0]
-                # current_word[0].morph_type = Morph.MorphType.ROOT # optionaly change the morph type to root too
-            if len(root_indices) == 1:
-                root_index = root_indices[0]
-                for i, m in enumerate(current_word):
-                    if i < root_index:
-                        m.morph_position = m.__class__.MorphPosition.PREFIX
-                    elif i == root_index:
-                        m.morph_position = m.__class__.MorphPosition.ROOT
-                    else:
-                        m.morph_position = m.__class__.MorphPosition.SUFFIX
-            elif len(root_indices) > 1:
-                first_root = root_indices[0]
-                last_root = root_indices[-1]
-                for i in range(0, first_root):
-                    current_word[i].morph_position = current_word[i].__class__.MorphPosition.PREFIX
-                for i in root_indices:
-                    current_word[i].morph_position = current_word[i].__class__.MorphPosition.ROOT
-                for i in range(first_root + 1, last_root):
-                    if i not in root_indices:
-                        current_word[i].morph_position = current_word[i].__class__.MorphPosition.INTERFIX
-                for i in range(last_root + 1, len(current_word)):
-                    current_word[i].morph_position = current_word[i].__class__.MorphPosition.SUFFIX
-            elif len(root_indices) == 0:
-                #no root - some mistake
-                current_word_str = ""
-                for morph in current_word: current_word_str += morph.text
-                raise Exception ("No root found in word: ", current_word_str)
-                # print ("\t".join(map(str,current_word)))
-                # input()
-
+            deduce_position(current_word)
             # Append the processed word and reset.
             current_words.append(current_word)
             current_word = None
