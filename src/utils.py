@@ -4,6 +4,7 @@ import os
 from typing import List, Tuple, Optional, Dict
 from data_sentece import DataSentence,Word,Morph
 from collections import Counter, defaultdict
+
 def load_annotations(filepath: str, indent: int = 4) -> List[DataSentence]:
     """
     Reads an annotation file and returns a list of DataSentence objects.
@@ -251,14 +252,9 @@ def write_morph_statistics(target_sentences: List["DataSentence"], languages_fil
         if directory_morphs_file:  
             os.makedirs(directory_morphs_file, exist_ok=True) # Create the directory if it doesnt exist
         with open(morphs_file, 'wt') as morphs_f:
-            cumulative_sum = 0
-
-            # Sort by descending number of different languages for the morph, secondary sum of morph counts
+            # Sort by descending sum of morph counts, secondary number of different languages for the morph
             for morph_text, etymology_counter in sorted(
-                morphs.items(), key=lambda item: (len(item[1]), sum(item[1].values())), reverse=True
-            ):
-                occurences = sum(etymology_counter.values())
-                cumulative_sum += occurences
+                morphs.items(), key=lambda item: (sum(item[1].values()),len(item[1])), reverse=True):
                 print(f"{morph_text}\t{dict(etymology_counter)}", file=morphs_f)
                 
 def count_sentences_words_morphs(sentences:List["DataSentence"]):
@@ -517,9 +513,6 @@ def calculate_cohen_kappa(sentences1: List[DataSentence], sentences2: List[DataS
 
     kappa = (observed_agreement - expected_agreement) / (1 - expected_agreement)
     return kappa
-
-from collections import defaultdict
-from typing import Dict, List, Optional
 
 def evaluate(
     sentences_prediction: List["DataSentence"],
