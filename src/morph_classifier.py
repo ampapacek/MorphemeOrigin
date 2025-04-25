@@ -14,7 +14,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 
 from model import Model
-from data_sentece import DataSentence
+from data_sentece import DataSentence,Word,Morph
 from data_transformers import EmbeddingTransformer, VowelStartEndTransformer
 
 import warnings
@@ -398,54 +398,46 @@ class MorphClassifier(Model):
           We split that string by comma to assign morph.etymology = ["AA", "BB"].
         - If multi_label=True, we do multi-label classification. The pipeline outputs a binary matrix from the 
           OneVsRestClassifier. We then use MultiLabelBinarizer.inverse_transform() to get the list of labels.
+
+          Returns list of DataSentence objects with predicted etymology.
         """
         if self.pipeline is None:
             raise ValueError("The model has not been trained. Call fit() or load() first.")
-
-        updated_data = []
-        for sentence in data:
-            sent_copy = copy.deepcopy(sentence)
-            for word in sent_copy.words:
+        updated_data = copy.deepcopy(data)
+        rows = []
+        morph_refs :list[Morph] = []  # for assigning predictions later
+        MorphType = Morph.MorphType
+        for sentence in updated_data:
+            for word in sentence.words:
                 for morph in word:
-                    if morph.morph_type == morph.__class__.MorphType.UNDEFINED:
+                    if morph.morph_type == MorphType.UNDEFINED:
+                        continue
+                    if not morph.text.isalpha():
                         continue
 
-                    morph_text = morph.text
-                    word_text = word.text
+                    rows.append({
+                        "text": morph.text,
+                        "word": word.text,
+                        "morph_type": morph.morph_type.value,
+                        "morph_position": morph.morph_position.value
+                    })
+                    morph_refs.append(morph)
 
-                    if self.lower_case:
-                        morph_text = morph_text.lower()
-                        word_text = word_text.lower()
+        if not rows:
+            return data  # Nothing to predict
 
-                    # Only predict if alpha
-                    if morph_text.isalpha():
-                        df_morph = pd.DataFrame([{
-                            "text": morph_text,
-                            "word": word_text,
-                            "morph_type": morph.morph_type.value,
-                            "morph_position": morph.morph_position.value
-                        }])
-                        if self.multi_label:
-                            # OneVsRestClassifier => pipeline outputs a binary matrix
-                            # We'll use our stored MultiLabelBinarizer to get label sets
-                            bin_pred = self.pipeline.predict(df_morph)
-                            # bin_pred is shape (1, n_classes) => a single row
-                            # inverse_transform returns a list of tuples or lists
-                            label_list = self._multi_label_binarizer.inverse_transform(bin_pred)
-                            # label_list is something like [("AA", "BB")]
-                            # Convert that to a Python list of strings
-                            morph.etymology = list(label_list[0])  # the first (and only) row
-                            if morph.etymology == []:
-                                # The classifier returned an empty sequence -> Predict ['ces']
-                                morph.etymology = ['ces']
-                        else:
-                            # Single-label => pipeline outputs a single string
-                            pred_label = self.pipeline.predict(df_morph)[0]
-                            pred_label = self._label_encoder.inverse_transform([pred_label])[0]
-                            morph.etymology = pred_label.split(",")
-                    else:
-                        morph.etymology = []
-            updated_data.append(sent_copy)
+        df_all = pd.DataFrame(rows)
+
+        if self.multi_label:
+            preds_bin = self.pipeline.predict(df_all)
+            pred_labels = self._multi_label_binarizer.inverse_transform(preds_bin)
+        else:
+            preds = self.pipeline.predict(df_all)
+            pred_labels = self._label_encoder.inverse_transform(preds)
+            pred_labels = [label.split(",") for label in pred_labels]
+
+        for morph, labels in zip(morph_refs, pred_labels):
+            morph.etymology = list(labels) if labels else ["ces"]  # fallback
 
         return updated_data
 
