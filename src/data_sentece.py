@@ -71,7 +71,7 @@ class Morph:
 
     morph_position: "Morph.MorphPosition" = None
 
-    def __init__(self, text: str, etymology: List[str],
+    def __init__(self, text: str, etymology: List[str] = [],
                  morph_type: "Morph.MorphType" = None,
                  position: "Morph.MorphPosition" = None):
         """
@@ -101,6 +101,9 @@ class Morph:
     
 @dataclass
 class Word:
+    def __init__(self, morphs:List[Morph] = []):
+        self.morphs = morphs
+        
     # A list of Morph objects that constitute the word.
     morphs: List[Morph]
 
