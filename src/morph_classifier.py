@@ -273,7 +273,7 @@ class MorphClassifier(Model):
                     rs = self.random_state + i
                     mlp = MLPClassifier(
                         hidden_layer_sizes=[self.mlp_hidden_size],
-                        max_iter=300,
+                        max_iter=self.mlp_max_iter,
                         verbose=False,
                         random_state=rs
                     )
@@ -288,7 +288,6 @@ class MorphClassifier(Model):
         elif classifier_type == "lr":
             base_classifier = LogisticRegression(
                 random_state=self.random_state,
-                max_iter=300
             )
         else:
             raise ValueError(f"Unknown classifier_type: {self.classifier_type}")
