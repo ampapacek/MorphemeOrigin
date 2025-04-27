@@ -428,15 +428,18 @@ class MorphClassifier(Model):
         df_all = pd.DataFrame(rows)
 
         if self.multi_label:
-            preds_bin = self.pipeline.predict(df_all)
-            pred_labels = self._multi_label_binarizer.inverse_transform(preds_bin)
+            preds_binary = self.pipeline.predict(df_all)
+            decoded_preds = self._multi_label_binarizer.inverse_transform(preds_binary)
         else:
             preds = self.pipeline.predict(df_all)
-            pred_labels = self._label_encoder.inverse_transform(preds)
-            pred_labels = [label.split(",") for label in pred_labels]
+            decoded_preds = self._label_encoder.inverse_transform(preds)
+            decoded_preds = [label.split(",") for label in decoded_preds]
 
-        for morph, labels in zip(morph_refs, pred_labels):
-            morph.etymology = list(labels) if labels else ["ces"]  # fallback
+        for morph, labels in zip(morph_refs, decoded_preds):
+            if labels:
+                morph.etymology = list(labels)
+            else:
+                morph.etymology = ["ces"]  # fallback if prediction is empty
 
         return updated_data
 
