@@ -208,6 +208,9 @@ def test_model(
             if directory: 
                 os.makedirs(directory, exist_ok=True)
             pprint_sentences(predictions,predictions_file)
+            
+            if verbose:
+                print(f"Predictions saved to file {predictions_file}")
                 
 
         # Evaluate
@@ -232,7 +235,7 @@ def test_model(
             print(f"F-score on borrowed morphs:            {f_score_on_borrowed:.1f} %")
             print(f"Grouped by unique morph text F-score:  {f_score_grouped:.1f} %")
             print()
-        # If a results_file was given, append a TSV line with the metrics (no header)
+        # If a results_file was given, append a TSV line with the metrics
         if results_file:
             directory = os.path.dirname(results_file)
             if directory: 
@@ -249,6 +252,9 @@ def test_model(
                     f"{f_score_on_borrowed:.1f}\t"
                     f"{f_score_grouped:.1f}\n"
                 )
+            if verbose:
+                print(f"Results saved to file {results_file}")
+
     except WordDictModel.NetworkError as net_err:
         print(f"Network error while running model '{model_name}'.\nThe following exception occured: {net_err}")
         raise net_err
