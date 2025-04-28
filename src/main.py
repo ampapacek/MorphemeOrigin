@@ -215,6 +215,8 @@ def test_model(
 
         # Evaluate
         evaluation_results = evaluate(predictions, target_data, instance_eval=True,micro_eval=True,native_borrowed_eval=True,group_by_text_eval=True, file_mistakes=file_mistakes)
+        if file_mistakes and verbose:
+            print(f"Incorrect predictions printed to file {file_mistakes}")
         f_score = evaluation_results['f1score_instance']
         f_score_micro = evaluation_results['f1score_micro']
         f_score_on_native = evaluation_results['f1_on_native']
@@ -310,6 +312,9 @@ def main():
     if args.print_stats:
         write_morph_statistics(test_sentences_target, stats_languages_test_file, stats_morphs_test_file)
         write_morph_statistics(train_sentences, stats_languages_train_file, stats_morphs_train_file)
+        if not args.quiet:
+            print(f"Statistics on train set printed to files {stats_languages_train_file}, {stats_morphs_train_file}")
+            print(f"Statistics on target set printed to files {stats_languages_test_file}, {stats_morphs_test_file}")
 
     if not args.quiet:
         print(f"Statistics on Train -- Morphs: {morph_count_train}, Words: {word_count_train}, Sentences: {sentence_count_train}")
