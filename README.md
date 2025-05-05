@@ -148,7 +148,7 @@ python3 src/main.py --help
 
 ## Baseline Models
 
-We provide four baseline models (see `src/baselines.py`), each offering a contrasting approach:
+We implement four baseline models (see `src/baselines.py`), each offering a different approach:
 
 1. **DummyModel**  
    Always predicts `["ces"]` for any alphabetic morph. Useful as a minimal baseline.
@@ -157,7 +157,7 @@ We provide four baseline models (see `src/baselines.py`), each offering a contra
 3. **MorphDictModel**  
    Uses root+affix dictionaries to label morphemes if found, falling back to `["ces"]`.
 4. **WordDictModel**  
-   Analyzes the entire word’s lemma (via MorphoDiTa) and assigns the word-level etymology from a dictionary, plus affixes.
+   Analyzes the word to get its lemma (via MorphoDiTa) and assigns the word-level etymology from a dictionary to root of the word, plus also uses affixes dictionaries.
 
 ## Evaluation
 
