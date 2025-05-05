@@ -88,6 +88,7 @@ The primary machine learning model in this project is defined in `morph_classifi
   - **Morph Type** (Root/Derivational affix/Inflectional affix) On by default use `-disable_morph_type` to disable.
   - **Morph Position** (Root/Prefix/Interfix/Suffix) On by default use `--disable_morph_position` to disable.
   - **Embeddings** (fastText) for words and/or morphs (`--use_word_embedding`, `--use_morph_embedding`).  
+  When using embeddings for the first time, they are automatically downloaded from the [internet](https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.cs.300.bin.gz).
   - **Vowel Start End** Binary indicators for whether a morph starts/ends with a vowel. Disable by   `-disable_vowels`
 
 - **Multi-Label vs Single-Label**  
