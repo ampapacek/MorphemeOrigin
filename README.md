@@ -32,14 +32,14 @@ Besides scripts the repository includes the following data in the directory `dat
 - **`annotations/`**: Annotated files (train, dev, test) plus original SIGMORPHON 2022 data.
 - **`etymological_data/`**: Supplementary data (CzEtyL etymological lexicon, affix/root dictionaries).
   
-## How to Use
 
-### Running the Experiment
+## Running the Experiment On Linux Based System
+
 To run the experiment with default settings, use:
 ```bash
 make run
 ```
-It will create virtual enviroment and will install the necessary packages.
+It will create virtual enviroment, install the necessary packages and run the script with defaul settings.
 
 ### Calculating Inter-Annotator Agreement
 To calculate agreement on the default two annotations, use:
@@ -52,6 +52,19 @@ To clean up generated files, use:
 ```bash
 make clean
 ```
+
+## Running the Experiment On Windows with PowerShell
+
+To run the experiment with default settings, use:
+```powershell
+powershell -ExecutionPolicy Bypass -File run_win.ps1
+```
+
+This will:
+- Create a virtual environment named `MorphOriginVenv` (if it doesn't already exist)
+- Install required packages from `requirements_win.txt`
+- Run the script with default settings (`--enable_all`)
+
 
 ## Running `main.py` with Arguments
 
@@ -67,7 +80,7 @@ source MorphOriginVenv/bin/activate
 ```
 3. **Run the script with custom arguments:**
    
-Example:
+### Example:
 ```bash
 python3 src/main.py --enable_all --extend_train --multi_label --mlp_hidden_size=40 --target_file=data/annotations/test.tsv
 ```
