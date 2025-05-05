@@ -241,7 +241,7 @@ class WordDictModel(Model):
             "guesser": "yes",
             "convert_tagset": "strip_lemma_comment",
         }
-        response = requests.get(url, params=params)
+        response = requests.post(url, data=params)
         response.raise_for_status()
         json_data = response.json()
         sentences = json_data.get("result", [])
