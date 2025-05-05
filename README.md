@@ -69,9 +69,9 @@ source MorphOriginVenv/bin/activate
    
 Example:
 ```bash
-python3 src/main.py --enable_all --extend_train --multi_label --mlp_hidden_size=40
+python3 src/main.py --enable_all --extend_train --multi_label --mlp_hidden_size=40 --target_file=data/annotations/test.tsv
 ```
-This enables all models (baselines + learning model) uses extended train set for the learning model using entries from etymological dictionary. Treats the target as multi labels (oposed to default predict the whole sequence at once as single class) and uses 40 neurons in hidden layer of the MLP classifier (which is used as default).
+This enables all models (baselines + learning model) uses extended train set for the learning model using entries from etymological dictionary. Treats the target as multi labels (oposed to default predict the whole sequence at once as single class) and uses 40 neurons in hidden layer of the MLP classifier (which is used as default). All models are evaluated on file `data/annotations/test.tsv` (default would be `data/annotations/dev.tsv`).
    
 ## Arguments description
 
@@ -125,13 +125,28 @@ Files are by default generated to directory `outputs\`. The output directory can
     You can specify `--mistakes_file <filename>` to record all morphs for which the learning model fails to perfectly predict the target.
     If `--print_mistakes` is set, the script will actually produce this mistakes file for all models (including baseline models). Otherwise, mistakes are not logged. With exception of learning `MorphClassifier` model if the `--mistakes_file` is specified.
 
+  - **Predictions File**
+  By default, the predictions made by the learning model are saved to `outputs/predictions.tsv`.  
+  You can change the path using the `--predictions_file` argument.  
+  If `--predictions_file` is set to an empty string or `None`, no predictions will be saved.
+
+- **Training and Target Files**
+
+  The data used for training and evaluation can be specified via arguments:
+
+  - `--train_file`: Path to the training file.  
+    Default: `data/annotations/train.tsv`
+
+  - `--target_file`: Path to the target (evaluation) file.  
+    Default: `data/annotations/dev.tsv`
+
 
 To see all available flags and parameters, run:
 ```bash
 python3 src/main.py --help
 ```
 
-### Baseline Models
+## Baseline Models
 
 We provide four baseline models (see `src/baselines.py`), each offering a contrasting approach:
 
