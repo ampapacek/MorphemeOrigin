@@ -258,8 +258,8 @@ def test_model(
                 print(f"Results saved to file {results_file}")
 
     except WordDictModel.NetworkError as net_err:
-        print(f"Network error while running model '{model_name}'.\nThe following exception occured: {net_err}")
-        raise net_err
+        print(f"\nNetwork error while running model '{model_name}'.\nThe following exception occured: {net_err}\n",file=sys.stderr)
+        return {}
     
     except Exception as e:
         print(f"Error when running model: '{model_name}'")
