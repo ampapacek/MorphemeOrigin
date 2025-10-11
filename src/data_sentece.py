@@ -115,7 +115,7 @@ class Word:
         return "".join(morph.text for morph in self.morphs)
     
     @property
-    def morph_count(self) -> str:
+    def morph_count(self) -> int:
         """
         Get the number of morphs in the Word.
         """
@@ -139,7 +139,7 @@ class DataSentence:
     words: List[Word]
 
     @property
-    def morph_count(self) -> str:
+    def morph_count(self) -> int:
         """
         Get the number of morphs in the sentence.
         """
