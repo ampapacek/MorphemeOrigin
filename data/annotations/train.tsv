@@ -3544,7 +3544,8 @@ Malé organizace mají problémy se získáním telefonních linek a tak mají n
     i
         i	I	ces
     telefon
-        telefon	R	ell
+        tele	R	ell
+        fon	R	ell
 
 Pro tyto situace je lepší si pořídit fax kombinovaný s telefonem
     Pro
@@ -3612,7 +3613,8 @@ Všechny kombinované přístroje rozeznají zda volá telefon nebo fax
         vol	R	ces
         á	I	ces
     telefon
-        telefon	R	ell
+        tele	R	ell
+        fon	R	ell
     nebo
         nebo	R	ces
     fax
@@ -3749,7 +3751,8 @@ K dostání jsou i trojkombinace fax telefon a záznamník
     fax
         fax	R	eng,lat
     telefon
-        telefon	R	ell
+        tele	R	ell
+        fon	R	ell
     a
         a	I	ces
     záznamník
@@ -5789,7 +5792,8 @@ Kombinace telefon fax by navíc měly zajišťovat
         ac	D	lat
         e	I	ces
     telefon
-        telefon	R	ell
+        tele	R	ell
+        fon	R	ell
     fax
         fax	R	eng,lat
     by
@@ -5832,7 +5836,8 @@ Automatické přepnutí do režimu faximile nebo telefon podle druhu příchozí
     nebo
         nebo	R	ces
     telefon
-        telefon	R	ell
+        tele	R	ell
+        fon	R	ell
     podle
         po	D	ces
         dle	R	ces
