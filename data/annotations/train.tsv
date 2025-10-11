@@ -6589,7 +6589,9 @@ Cílem je restrukturalizace ekonomiky a ta má obrovské množství forem bankro
         form	R	eng,lat
         ou	D	ces
     extrémní
-        extrémní	R	deu,fra,lat
+        extrém	R	lat
+        n	D	ces
+        í	I	ces
 
 10 15 měsíčně
     10
