@@ -14,6 +14,11 @@ import requests
 from data_sentece import DataSentence, Morph
 from utils import evaluate, load_annotations, pprint_sentences, remove_targets
 
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
 
 LLM_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 MORPH_TAGS = {"R", "D", "I"}
@@ -319,22 +324,31 @@ def append_eval_summary_line(
     if directory:
         os.makedirs(directory, exist_ok=True)
 
+    line = (
+        f"{now_iso()}\t"
+        f"{model}\t"
+        f"{selected_sentences}\t"
+        f"{train_context_morphs}\t"
+        f"{metrics.get('f1score_instance', 0.0):.2f}\t"
+        f"{metrics.get('accuracy_instance', 0.0):.2f}\t"
+        f"{metrics.get('f1score_micro', 0.0):.2f}\t"
+        f"{metrics.get('f1_on_native', 0.0):.2f}\t"
+        f"{metrics.get('f1_on_borrowed', 0.0):.2f}\t"
+        f"{metrics.get('grouped_fscore', 0.0):.2f}\t"
+        f"{output_file}\t"
+        f"{gold_file}\t"
+        f"{mistakes_file}\n"
+    )
+
     with open(eval_results_file, "at", encoding="utf-8") as f:
-        f.write(
-            f"{now_iso()}\t"
-            f"{model}\t"
-            f"{selected_sentences}\t"
-            f"{train_context_morphs}\t"
-            f"{metrics.get('f1score_instance', 0.0):.2f}\t"
-            f"{metrics.get('accuracy_instance', 0.0):.2f}\t"
-            f"{metrics.get('f1score_micro', 0.0):.2f}\t"
-            f"{metrics.get('f1_on_native', 0.0):.2f}\t"
-            f"{metrics.get('f1_on_borrowed', 0.0):.2f}\t"
-            f"{metrics.get('grouped_fscore', 0.0):.2f}\t"
-            f"{output_file}\t"
-            f"{gold_file}\t"
-            f"{mistakes_file}\n"
-        )
+        if fcntl is not None:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        try:
+            f.write(line)
+            f.flush()
+        finally:
+            if fcntl is not None:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
 
 def call_llm_api(
