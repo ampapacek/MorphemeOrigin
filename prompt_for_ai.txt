@@ -54,5 +54,4 @@ Rules:
 
 
 There are aproximatly 90 % native morphs ('ces') in the data. Inflectional affixes are almost always native.
-Learn from train.tsv and predict on dev_for_prediction.tsv.
 Take time to analyze and make the predictions.
