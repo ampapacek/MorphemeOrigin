@@ -42,15 +42,15 @@ Jak konstatoval premiér
         prem	R	fra,lat
         iér	D	fra,lat
 
-Learning data:
-Use the provided learning annotated data as reference. Learn the patterns and rules from the examples.
-
 Rules:
 	Preserve all original text, indentation, morphs, and D/R/I tags.
 	Add exactly one <TAB> then the ISO 639‑3 code(s) per morph line.
 	Use ces for native Slavic/Czech forms.
 	Do not add any other columns or comments.
     Numerical values are not to be annotated.
+
+Possible language codes :
+ces, lat, deu, ita, eng, ell, gmh, slk, pol, orv, chu, rus, hrv, srp, goh, frk, fra, frm, fro, hun, tur, heb, ara, pes, nld, spa, por, isl, lng, egy, zho, jpn
 
 
 There are aproximatly 90 % native morphs ('ces') in the data. Inflectional affixes are almost always native.
