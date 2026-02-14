@@ -3,6 +3,7 @@ import argparse
 import math
 import json
 import os
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -11,7 +12,7 @@ from typing import List, Sequence
 import requests
 
 from data_sentece import DataSentence, Morph
-from utils import load_annotations, pprint_sentences, remove_targets
+from utils import evaluate, load_annotations, pprint_sentences, remove_targets
 
 
 LLM_API_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -42,8 +43,25 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--train_file", type=str, default="data/annotations/train.tsv")
+    parser.add_argument(
+        "--gold_file",
+        type=str,
+        default=None,
+        help=(
+            "Gold annotations for evaluation. "
+            "If omitted, tries to derive from --input_file by replacing *_for_prediction.tsv with *.tsv."
+        ),
+    )
     parser.add_argument("--prompt_file", type=str, default="prompt_for_ai.txt")
-    parser.add_argument("--output_file", type=str, default="outputs/llm_predictions.tsv")
+    parser.add_argument(
+        "--output_file",
+        type=str,
+        default=None,
+        help=(
+            "Output path. If omitted, it is auto-generated from model, train context, "
+            "and selected sentence size."
+        ),
+    )
     parser.add_argument("--batch_morph_target", type=int, default=350)
     parser.add_argument(
         "--train_context_morphs",
@@ -54,10 +72,27 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--api_key_env", type=str, default="LLM_API_KEY")
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--max_tokens", type=int, default=16000)
-    parser.add_argument("--timeout_sec", type=int, default=180)
+    parser.add_argument("--timeout_sec", type=int, default=300)
     parser.add_argument("--max_retries", type=int, default=3)
     parser.add_argument("--retry_wait_sec", type=float, default=3.0)
     parser.add_argument("--sleep_between_batches_sec", type=float, default=0.0)
+    parser.add_argument(
+        "--skip_eval",
+        action="store_true",
+        help="Skip automatic evaluation after predictions are generated.",
+    )
+    parser.add_argument(
+        "--eval_results_file",
+        type=str,
+        default="outputs/llm_eval_results.tsv",
+        help="Common TSV file where one evaluation summary line is appended per run.",
+    )
+    parser.add_argument(
+        "--mistakes_file",
+        type=str,
+        default=None,
+        help="Optional mistakes output path. If omitted, a file in outputs/ is generated automatically.",
+    )
     parser.add_argument("--http_referer", type=str, default=None)
     parser.add_argument("--x_title", type=str, default="MorphemeOrigin")
     parser.add_argument(
@@ -221,6 +256,87 @@ def select_input_subset(sentences: Sequence[DataSentence], selector: float | Non
     return list(sentences[: min(total, count)])
 
 
+def sanitize_filename_token(value: str) -> str:
+    token = re.sub(r"[^A-Za-z0-9]+", "_", value).strip("_")
+    return token or "unknown"
+
+
+def sentence_size_token(selector: float | None, selected_count: int) -> str:
+    if selector is None:
+        return f"all_{selected_count}"
+    if 0 < selector < 1:
+        fraction = f"{selector:.4f}".rstrip("0").rstrip(".").replace(".", "p")
+        return f"frac_{fraction}_{selected_count}"
+    return f"n_{selected_count}"
+
+
+def resolve_output_file(
+    *,
+    output_file: str | None,
+    model: str,
+    train_context_morphs: int,
+    sentence_selector: float | None,
+    selected_sentence_count: int,
+) -> str:
+    if output_file:
+        return output_file
+
+    model_token = sanitize_filename_token(model)
+    train_token = f"trainm_{max(0, train_context_morphs)}"
+    size_token = sentence_size_token(sentence_selector, selected_sentence_count)
+    filename = f"llm_predictions_{model_token}_{train_token}_{size_token}.tsv"
+    return os.path.join("outputs", filename)
+
+
+def resolve_gold_file(gold_file: str | None, input_file: str) -> str:
+    if gold_file:
+        return gold_file
+    if input_file.endswith("_for_prediction.tsv"):
+        return input_file[: -len("_for_prediction.tsv")] + ".tsv"
+    else:
+        return None
+
+
+def resolve_mistakes_file(mistakes_file: str | None, output_file: str) -> str:
+    if mistakes_file:
+        return mistakes_file
+    output_base = os.path.splitext(os.path.basename(output_file))[0]
+    return os.path.join("outputs", f"mistakes_{output_base}.tsv")
+
+
+def append_eval_summary_line(
+    *,
+    eval_results_file: str,
+    model: str,
+    output_file: str,
+    gold_file: str,
+    mistakes_file: str,
+    selected_sentences: int,
+    train_context_morphs: int,
+    metrics: dict[str, float],
+) -> None:
+    directory = os.path.dirname(eval_results_file)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+
+    with open(eval_results_file, "at", encoding="utf-8") as f:
+        f.write(
+            f"{now_iso()}\t"
+            f"{model}\t"
+            f"{selected_sentences}\t"
+            f"{train_context_morphs}\t"
+            f"{metrics.get('f1score_instance', 0.0):.2f}\t"
+            f"{metrics.get('accuracy_instance', 0.0):.2f}\t"
+            f"{metrics.get('f1score_micro', 0.0):.2f}\t"
+            f"{metrics.get('f1_on_native', 0.0):.2f}\t"
+            f"{metrics.get('f1_on_borrowed', 0.0):.2f}\t"
+            f"{metrics.get('grouped_fscore', 0.0):.2f}\t"
+            f"{output_file}\t"
+            f"{gold_file}\t"
+            f"{mistakes_file}\n"
+        )
+
+
 def call_llm_api(
     *,
     api_key: str,
@@ -274,13 +390,22 @@ def main() -> None:
     system_prompt = read_text(args.prompt_file)
     all_input_sentences = load_annotations(args.input_file)
     input_sentences = select_input_subset(all_input_sentences, args.sentences)
+    output_file = resolve_output_file(
+        output_file=args.output_file,
+        model=args.model,
+        train_context_morphs=args.train_context_morphs,
+        sentence_selector=args.sentences,
+        selected_sentence_count=len(input_sentences),
+    )
     prediction_sentences = remove_targets(input_sentences)
+    gold_file = resolve_gold_file(args.gold_file, args.input_file)
+    mistakes_file = resolve_mistakes_file(args.mistakes_file, output_file)
     batches = make_batches(input_sentences, args.batch_morph_target)
-    output_dir = os.path.dirname(args.output_file)
+    output_dir = os.path.dirname(output_file)
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
     # Clear old content so checkpoint writes always reflect this run.
-    with open(args.output_file, "wt", encoding="utf-8"):
+    with open(output_file, "wt", encoding="utf-8"):
         pass
     log_stream = None
     if args.log_file:
@@ -299,7 +424,11 @@ def main() -> None:
                 f"loaded_sentences={len(all_input_sentences)}\n"
                 f"selected_sentences={len(input_sentences)}\n"
                 f"train_file={args.train_file}\n"
-                f"output_file={args.output_file}\n"
+                f"gold_file={gold_file}\n"
+                f"output_file={output_file}\n"
+                f"mistakes_file={mistakes_file}\n"
+                f"eval_results_file={args.eval_results_file}\n"
+                f"skip_eval={args.skip_eval}\n"
                 f"batch_morph_target={args.batch_morph_target}\n"
                 f"max_retries={args.max_retries}\n"
                 f"temperature={args.temperature}\n"
@@ -430,11 +559,11 @@ def main() -> None:
                         f"status=success\nelapsed_seconds={round(call_elapsed, 3)}",
                     )
                     # Persist progress after each finished batch.
-                    pprint_sentences(prediction_sentences[: batch.end], args.output_file)
+                    pprint_sentences(prediction_sentences[: batch.end], output_file)
                     log_block(
                         log_stream,
                         f"Batch {batch_idx} checkpoint saved",
-                        f"output_file={args.output_file}\nsentences_saved={batch.end}",
+                        f"output_file={output_file}\nsentences_saved={batch.end}",
                     )
                     break
                 except (requests.RequestException, ValueError, KeyError) as exc:
@@ -457,8 +586,65 @@ def main() -> None:
             if args.sleep_between_batches_sec > 0:
                 time.sleep(args.sleep_between_batches_sec)
 
-        print(f"Predictions written to: {args.output_file}")
-        log_block(log_stream, "Run finished", f"predictions_file={args.output_file}")
+        print(f"Predictions written to: {output_file}")
+        log_block(log_stream, "Prediction run finished", f"predictions_file={output_file}")
+
+        if not args.skip_eval and gold_file:
+            gold_sentences_full = load_annotations(gold_file)
+            gold_sentences = select_input_subset(gold_sentences_full, args.sentences)
+            if len(gold_sentences) != len(prediction_sentences):
+                raise RuntimeError(
+                    "Prediction/gold sentence count mismatch: "
+                    f"{len(prediction_sentences)} vs {len(gold_sentences)}."
+                )
+
+            eval_results = evaluate(
+                prediction_sentences,
+                gold_sentences,
+                instance_eval=True,
+                micro_eval=True,
+                native_borrowed_eval=True,
+                group_by_text_eval=True,
+                file_mistakes=mistakes_file,
+            )
+            append_eval_summary_line(
+                eval_results_file=args.eval_results_file,
+                model=args.model,
+                output_file=output_file,
+                gold_file=gold_file,
+                mistakes_file=mistakes_file,
+                selected_sentences=len(prediction_sentences),
+                train_context_morphs=args.train_context_morphs,
+                metrics=eval_results,
+            )
+
+            print("Evaluation:")
+            print(f"f1score_instance\t{eval_results.get('f1score_instance', 0.0):.2f}")
+            print(f"accuracy_instance\t{eval_results.get('accuracy_instance', 0.0):.2f}")
+            print(f"f1score_micro\t{eval_results.get('f1score_micro', 0.0):.2f}")
+            print(f"f1_on_native\t{eval_results.get('f1_on_native', 0.0):.2f}")
+            print(f"f1_on_borrowed\t{eval_results.get('f1_on_borrowed', 0.0):.2f}")
+            print(f"grouped_fscore\t{eval_results.get('grouped_fscore', 0.0):.2f}")
+            print(f"Mistakes written to: {mistakes_file}")
+            print(f"Evaluation summary appended to: {args.eval_results_file}")
+            log_block(
+                log_stream,
+                "Evaluation finished",
+                (
+                    f"mistakes_file={mistakes_file}\n"
+                    f"eval_results_file={args.eval_results_file}\n"
+                    f"f1score_instance={eval_results.get('f1score_instance', 0.0):.2f}\n"
+                    f"accuracy_instance={eval_results.get('accuracy_instance', 0.0):.2f}\n"
+                    f"f1score_micro={eval_results.get('f1score_micro', 0.0):.2f}\n"
+                    f"f1_on_native={eval_results.get('f1_on_native', 0.0):.2f}\n"
+                    f"f1_on_borrowed={eval_results.get('f1_on_borrowed', 0.0):.2f}\n"
+                    f"grouped_fscore={eval_results.get('grouped_fscore', 0.0):.2f}"
+                ),
+            )
+        else:
+            log_block(log_stream, "Evaluation skipped", "skip_eval=true")
+
+        log_block(log_stream, "Run finished", f"predictions_file={output_file}")
     finally:
         if log_stream:
             log_stream.close()
