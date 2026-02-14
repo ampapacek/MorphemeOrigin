@@ -1,6 +1,8 @@
 # Makefile
 
-.PHONY: all run clean venv agreement
+.PHONY: all run clean venv venv_recreate agreement
+
+PYTHON_BIN ?= $(shell command -v python3.12 || command -v python3.11 || command -v python3)
 
 # Default target: run the pipeline
 all: run
@@ -8,10 +10,16 @@ all: run
 # Check or create the virtual environment, then install requirements
 venv:
 	@if [ -d "MorphOriginVenv" ]; then \
-	  . MorphOriginVenv/bin/activate; \
+	  VENV_PY=$$(MorphOriginVenv/bin/python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"); \
+	  if [ "$$VENV_PY" = "3.14" ]; then \
+	    echo "Existing MorphOriginVenv uses Python $$VENV_PY, which triggers scipy source build (requires gfortran)."; \
+	    echo "Run 'make venv_recreate' to rebuild with $(PYTHON_BIN)."; \
+	    exit 1; \
+	  fi; \
+	  . MorphOriginVenv/bin/activate && pip install -r requirements.txt; \
 	else \
-	  echo "Setting up virtual environment 'MorphOriginVenv'"; \
-	  python3 -m venv MorphOriginVenv; \
+	  echo "Setting up virtual environment 'MorphOriginVenv' using $(PYTHON_BIN)"; \
+	  $(PYTHON_BIN) -m venv MorphOriginVenv; \
 	  . MorphOriginVenv/bin/activate && pip install -r requirements.txt; \
 	fi
 
