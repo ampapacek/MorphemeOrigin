@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import math
 import json
 import os
 import time
@@ -30,6 +31,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--model", type=str, required=True, help="Model ID.")
     parser.add_argument("--input_file", type=str, default="data/annotations/dev_for_prediction.tsv")
+    parser.add_argument(
+        "--sentences",
+        type=float,
+        default=None,
+        help=(
+            "How many input sentences to process. "
+            "If 0 < value < 1, it is treated as a file portion (e.g. 0.2 = first 20%%). "
+            "If value >= 1, it must be an integer sentence count."
+        ),
+    )
     parser.add_argument("--train_file", type=str, default="data/annotations/train.tsv")
     parser.add_argument("--prompt_file", type=str, default="prompt_for_ai.txt")
     parser.add_argument("--output_file", type=str, default="outputs/llm_predictions.tsv")
@@ -187,6 +198,29 @@ def choose_train_context(sentences: Sequence[DataSentence], target_morphs: int) 
     return selected
 
 
+def select_input_subset(sentences: Sequence[DataSentence], selector: float | None) -> List[DataSentence]:
+    if selector is None:
+        return list(sentences)
+    if selector <= 0:
+        raise ValueError("--sentences must be > 0.")
+
+    total = len(sentences)
+    if total == 0:
+        return []
+
+    if 0 < selector < 1:
+        count = max(1, math.ceil(total * selector))
+        return list(sentences[:count])
+
+    if not float(selector).is_integer():
+        raise ValueError("When --sentences >= 1, it must be an integer (e.g. 50, not 50.5).")
+
+    count = int(selector)
+    if count <= 0:
+        raise ValueError("--sentences must be > 0.")
+    return list(sentences[: min(total, count)])
+
+
 def call_llm_api(
     *,
     api_key: str,
@@ -238,7 +272,8 @@ def main() -> None:
         )
 
     system_prompt = read_text(args.prompt_file)
-    input_sentences = load_annotations(args.input_file)
+    all_input_sentences = load_annotations(args.input_file)
+    input_sentences = select_input_subset(all_input_sentences, args.sentences)
     prediction_sentences = remove_targets(input_sentences)
     batches = make_batches(input_sentences, args.batch_morph_target)
     output_dir = os.path.dirname(args.output_file)
@@ -260,6 +295,9 @@ def main() -> None:
             (
                 f"model={args.model}\n"
                 f"input_file={args.input_file}\n"
+                f"sentences_selector={args.sentences}\n"
+                f"loaded_sentences={len(all_input_sentences)}\n"
+                f"selected_sentences={len(input_sentences)}\n"
                 f"train_file={args.train_file}\n"
                 f"output_file={args.output_file}\n"
                 f"batch_morph_target={args.batch_morph_target}\n"
@@ -285,7 +323,8 @@ def main() -> None:
             )
 
         print(
-            f"Loaded {len(input_sentences)} sentences from {args.input_file}. "
+            f"Loaded {len(all_input_sentences)} sentences from {args.input_file}; "
+            f"selected {len(input_sentences)} sentence(s) for processing. "
             f"Running {len(batches)} batch requests with target {args.batch_morph_target} morphs per batch."
         )
 
