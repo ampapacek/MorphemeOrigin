@@ -65,6 +65,7 @@ cc.cs.300.bin
 .DS_Store
 
 
-outputs/
+outputs*/
 output/
 out/
+*.log
