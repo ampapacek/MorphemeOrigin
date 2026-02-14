@@ -324,6 +324,13 @@ def append_eval_summary_line(
     if directory:
         os.makedirs(directory, exist_ok=True)
 
+    header = (
+        "timestamp\tmodel\tselected_sentences\ttrain_context_morphs\t"
+        "f1score_instance\taccuracy_instance\tf1score_micro\t"
+        "f1_on_native\tf1_on_borrowed\tgrouped_fscore\t"
+        "output_file\tgold_file\tmistakes_file\n"
+    )
+
     line = (
         f"{now_iso()}\t"
         f"{model}\t"
@@ -344,6 +351,9 @@ def append_eval_summary_line(
         if fcntl is not None:
             fcntl.flock(f.fileno(), fcntl.LOCK_EX)
         try:
+            f.seek(0, os.SEEK_END)
+            if f.tell() == 0:
+                f.write(header)
             f.write(line)
             f.flush()
         finally:
