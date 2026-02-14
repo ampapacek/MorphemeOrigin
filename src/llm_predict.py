@@ -76,7 +76,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--api_key_env", type=str, default="LLM_API_KEY")
     parser.add_argument("--temperature", type=float, default=0.0)
-    parser.add_argument("--max_tokens", type=int, default=16000)
+    parser.add_argument("--max_tokens", type=int, default=20000)
     parser.add_argument("--timeout_sec", type=int, default=300)
     parser.add_argument("--max_retries", type=int, default=3)
     parser.add_argument("--retry_wait_sec", type=float, default=3.0)
@@ -186,13 +186,16 @@ def parse_morph_rows(model_output: str) -> List[tuple[str, str, str]]:
     rows: List[tuple[str, str, str]] = []
     for raw_line in strip_fence(model_output).splitlines():
         line = raw_line.lstrip()
-        if "\t" not in line:
-            continue
-        parts = line.split("\t")
+        parts: list[str]
+        if "\t" in line:
+            parts = line.split("\t")
+        else:
+            # Recovery parser for outputs that lost tab formatting.
+            parts = line.split(maxsplit=2)
         if len(parts) < 2:
             continue
         morph_text = parts[0].strip()
-        morph_tag = parts[1].strip()
+        morph_tag = parts[1].strip().upper()
         if morph_tag not in MORPH_TAGS:
             continue
         etymology = parts[2].strip() if len(parts) >= 3 else ""
@@ -203,7 +206,9 @@ def parse_morph_rows(model_output: str) -> List[tuple[str, str, str]]:
 def normalize_etymology(field: str) -> List[str]:
     if not field:
         return []
-    return [code.strip() for code in field.split(",") if code.strip()]
+    # Accept commas/spaces/semicolons and keep only ISO3-like tokens.
+    parts = re.split(r"[,\s;/|]+", field.lower())
+    return [code for code in parts if re.fullmatch(r"[a-z]{3}", code)]
 
 
 def find_matching_rows(
@@ -218,6 +223,63 @@ def find_matching_rows(
         if all(window[i][0] == expected[i][0] and window[i][1] == expected[i][1] for i in range(n)):
             return window
     return None
+
+
+def recover_matching_rows(
+    parsed_rows: Sequence[tuple[str, str, str]], expected_morphs: Sequence[Morph]
+) -> tuple[List[tuple[str, str, str]], dict[str, int]]:
+    """
+    Best-effort row alignment when strict contiguous matching fails.
+    Priority:
+    1) text + tag in forward order
+    2) text-only in forward order (tag coerced to expected tag)
+    3) missing row -> empty etymology (caller defaults to ces for non-numeric)
+    """
+    recovered: List[tuple[str, str, str]] = []
+    row_idx = 0
+    exact = 0
+    text_only = 0
+    missing = 0
+
+    for morph in expected_morphs:
+        expected_text = morph.text
+        expected_tag = str(morph.morph_type)
+        found_idx: int | None = None
+
+        for i in range(row_idx, len(parsed_rows)):
+            if parsed_rows[i][0] == expected_text and parsed_rows[i][1] == expected_tag:
+                found_idx = i
+                break
+        if found_idx is not None:
+            recovered.append(parsed_rows[found_idx])
+            row_idx = found_idx + 1
+            exact += 1
+            continue
+
+        for i in range(row_idx, len(parsed_rows)):
+            if parsed_rows[i][0] == expected_text:
+                found_idx = i
+                break
+        if found_idx is not None:
+            recovered.append((expected_text, expected_tag, parsed_rows[found_idx][2]))
+            row_idx = found_idx + 1
+            text_only += 1
+            continue
+
+        recovered.append((expected_text, expected_tag, ""))
+        missing += 1
+
+    stats = {"exact": exact, "text_only": text_only, "missing": missing}
+    return recovered, stats
+
+
+def etymology_with_default(morph: Morph, field: str) -> List[str]:
+    codes = normalize_etymology(field)
+    if codes:
+        return codes
+    if morph.text.isdigit():
+        return []
+    return ["ces"]
 
 
 def read_text(path: str) -> str:
@@ -561,16 +623,31 @@ def main() -> None:
                     )
                     parsed_rows = parse_morph_rows(output_text)
                     matching = find_matching_rows(parsed_rows, expected_morphs)
+                    recovery_stats: dict[str, int] | None = None
                     if matching is None:
-                        raise ValueError(
-                            f"Response did not contain an aligned morph sequence for batch {batch_idx}."
-                        )
+                        matching, recovery_stats = recover_matching_rows(parsed_rows, expected_morphs)
 
                     predicted_morphs = flatten_morphs(batch_prediction)
                     for morph, row in zip(predicted_morphs, matching):
-                        morph.etymology = normalize_etymology(row[2])
-                        if morph.text.isdigit():
-                            morph.etymology = []
+                        morph.etymology = etymology_with_default(morph, row[2])
+
+                    if recovery_stats is not None:
+                        log_block(
+                            log_stream,
+                            f"Batch {batch_idx} formatting/alignment recovery",
+                            (
+                                f"parsed_rows={len(parsed_rows)}\n"
+                                f"expected_rows={len(expected_morphs)}\n"
+                                f"exact_matches={recovery_stats['exact']}\n"
+                                f"text_only_matches={recovery_stats['text_only']}\n"
+                                f"defaulted_missing_rows={recovery_stats['missing']}"
+                            ),
+                        )
+                        print(
+                            f"Batch {batch_idx}: recovered non-aligned output "
+                            f"(exact={recovery_stats['exact']}, text_only={recovery_stats['text_only']}, "
+                            f"defaulted={recovery_stats['missing']})."
+                        )
 
                     assigned = True
                     print(
