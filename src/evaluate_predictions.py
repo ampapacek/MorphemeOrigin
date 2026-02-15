@@ -29,6 +29,7 @@ def main() -> None:
         micro_eval=True,
         native_borrowed_eval=True,
         group_by_text_eval=True,
+        morph_type_eval=True,
         file_mistakes=args.mistakes_file,
     )
 
@@ -40,9 +41,19 @@ def main() -> None:
         "f1_on_native",
         "f1_on_borrowed",
         "grouped_fscore",
+        "f1_on_root",
+        "f1_on_derivational_affix",
+        "f1_on_inflectional_affix",
+        "count_root",
+        "count_derivational_affix",
+        "count_inflectional_affix",
     ]:
         if key in results:
-            print(f"{key}\t{results[key]:.2f}")
+            value = results[key]
+            if isinstance(value, int):
+                print(f"{key}\t{value}")
+            else:
+                print(f"{key}\t{value:.2f}")
 
     if args.mistakes_file:
         print(f"Mistakes written to: {args.mistakes_file}")

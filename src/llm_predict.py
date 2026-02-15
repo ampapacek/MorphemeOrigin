@@ -20,7 +20,8 @@ except ImportError:
     fcntl = None
 
 
-LLM_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 MORPH_TAGS = {"R", "D", "I"}
 
 
@@ -74,7 +75,32 @@ def parse_args() -> argparse.Namespace:
         default=0,
         help="Approximate number of train morphs sent as in-context examples; 0 disables.",
     )
-    parser.add_argument("--api_key_env", type=str, default="LLM_API_KEY")
+    parser.add_argument(
+        "--api_provider",
+        type=str,
+        choices=["openrouter", "openai"],
+        default="openrouter",
+        help="API provider to use. Default is backward-compatible: openrouter.",
+    )
+    parser.add_argument(
+        "--api_endpoint",
+        type=str,
+        default=None,
+        help=(
+            "Optional override of chat-completions endpoint (OpenAI-compatible). "
+            "If omitted, uses provider default endpoint."
+        ),
+    )
+    parser.add_argument(
+        "--api_key_env",
+        type=str,
+        default="LLM_API_KEY",
+        help=(
+            "Optional env var name for API key override. "
+            "If unset/missing, falls back to provider-specific env var: "
+            "OPENROUTER_API_KEY (openrouter) or OPENAI_API_KEY (openai)."
+        ),
+    )
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--max_tokens", type=int, default=20000)
     parser.add_argument("--timeout_sec", type=int, default=300)
@@ -355,6 +381,30 @@ def resolve_output_file(
     return os.path.join("outputs", filename)
 
 
+def resolve_api_endpoint(api_provider: str, api_endpoint: str | None) -> str:
+    if api_endpoint:
+        return api_endpoint
+    if api_provider == "openai":
+        return OPENAI_API_URL
+    return OPENROUTER_API_URL
+
+
+def resolve_api_key(api_provider: str, api_key_env: str | None) -> tuple[str, str]:
+    if api_key_env:
+        explicit = os.getenv(api_key_env)
+        if explicit:
+            return explicit, api_key_env
+
+    fallback_env = "OPENROUTER_API_KEY" if api_provider == "openrouter" else "OPENAI_API_KEY"
+    fallback = os.getenv(fallback_env)
+    if fallback:
+        return fallback, fallback_env
+
+    tried = [env for env in [api_key_env, fallback_env] if env]
+    tried_str = ", ".join(tried) if tried else "(no env configured)"
+    raise RuntimeError(f"API key not found. Set one of: {tried_str}")
+
+
 def resolve_gold_file(gold_file: str | None, input_file: str) -> str:
     if gold_file:
         return gold_file
@@ -426,6 +476,8 @@ def append_eval_summary_line(
 def call_llm_api(
     *,
     api_key: str,
+    api_provider: str,
+    api_endpoint: str,
     model: str,
     messages: list[dict[str, str]],
     temperature: float,
@@ -438,10 +490,12 @@ def call_llm_api(
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
-    if http_referer:
-        headers["HTTP-Referer"] = http_referer
-    if x_title:
-        headers["X-Title"] = x_title
+    # OpenRouter-specific routing metadata headers.
+    if api_provider == "openrouter":
+        if http_referer:
+            headers["HTTP-Referer"] = http_referer
+        if x_title:
+            headers["X-Title"] = x_title
 
     payload = {
         "model": model,
@@ -449,7 +503,7 @@ def call_llm_api(
         "temperature": temperature,
         "max_tokens": max_tokens,
     }
-    response = requests.post(LLM_API_URL, headers=headers, json=payload, timeout=timeout_sec)
+    response = requests.post(api_endpoint, headers=headers, json=payload, timeout=timeout_sec)
     response.raise_for_status()
     data = response.json()
     message_content = data["choices"][0]["message"]["content"]
@@ -467,11 +521,8 @@ def call_llm_api(
 def main() -> None:
     args = parse_args()
 
-    api_key = os.getenv(args.api_key_env) or os.getenv("OPENROUTER_API_KEY")
-    if not api_key:
-        raise RuntimeError(
-            f"Environment variable {args.api_key_env} is not set (or OPENROUTER_API_KEY fallback is missing)."
-        )
+    api_endpoint = resolve_api_endpoint(args.api_provider, args.api_endpoint)
+    api_key, api_key_source = resolve_api_key(args.api_provider, args.api_key_env)
 
     system_prompt = read_text(args.prompt_file)
     all_input_sentences = load_annotations(args.input_file)
@@ -505,6 +556,9 @@ def main() -> None:
             "Run started",
             (
                 f"model={args.model}\n"
+                f"api_provider={args.api_provider}\n"
+                f"api_endpoint={api_endpoint}\n"
+                f"api_key_source={api_key_source}\n"
                 f"input_file={args.input_file}\n"
                 f"sentences_selector={args.sentences}\n"
                 f"loaded_sentences={len(all_input_sentences)}\n"
@@ -600,6 +654,8 @@ def main() -> None:
                     call_start = time.perf_counter()
                     output_text, response_data = call_llm_api(
                         api_key=api_key,
+                        api_provider=args.api_provider,
+                        api_endpoint=api_endpoint,
                         model=args.model,
                         messages=base_messages,
                         temperature=args.temperature,

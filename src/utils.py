@@ -550,6 +550,7 @@ def evaluate(
     micro_eval: bool = False,
     native_borrowed_eval: bool = False,
     group_by_text_eval: bool = False,
+    morph_type_eval: bool = True,
     file_mistakes: Optional[str] = None
 ) -> Dict[str, float]:
     """
@@ -573,6 +574,13 @@ def evaluate(
        - Compute the average F1 for each distinct text, 
          then average across all distinct morph.text values.
 
+    5) Morph-Type Split (enabled by morph_type_eval=True):
+       - Computes separate average per-morph F1 for:
+         - roots
+         - derivational affixes
+         - inflectional affixes
+       - Also returns counts for each morph type.
+
     The function returns a dictionary containing whichever metrics were requested. 
 
     Parameters:
@@ -590,6 +598,9 @@ def evaluate(
         If True, also computes separate F1 for target=ces (native) vs. borrowed.
     group_by_text_eval : bool, default=False
         If True, also computes an F1 by grouping morphs according to morph.text.
+    morph_type_eval : bool, default=True
+        If True, computes separate F1 scores and counts for roots, derivational affixes,
+        and inflectional affixes.
     file_mistakes : str, optional
         If specified and instance_eval=True, logs each morph with F1 != 1.0 
         to this file.
@@ -607,6 +618,12 @@ def evaluate(
                 "f1_on_native": ...,
                 "f1_on_borrowed": ...,
                 "grouped_fscore": ...,
+                "f1_on_root": ...,
+                "f1_on_derivational_affix": ...,
+                "f1_on_inflectional_affix": ...,
+                "count_root": ...,
+                "count_derivational_affix": ...,
+                "count_inflectional_affix": ...,
             }
     """
     # For mistakes logging 
@@ -644,6 +661,15 @@ def evaluate(
     # (4) Group-by-text accumulators
     if group_by_text_eval:
         f1_accumulators = defaultdict(lambda: {"sum": 0.0, "count": 0}) if group_by_text_eval else None
+        
+    # (5) Morph-type split
+    if morph_type_eval:
+        f1_root_sum = 0.0
+        root_count = 0
+        f1_deriv_sum = 0.0
+        deriv_count = 0
+        f1_infl_sum = 0.0
+        infl_count = 0
 
     for sent_pred, sent_tgt in zip(sentences_prediction, sentences_target):
         # Basic check for sentence-level mismatch
@@ -702,6 +728,18 @@ def evaluate(
                     f1_accumulators[text]["sum"]   += f1
                     f1_accumulators[text]["count"] += 1
 
+                # (5) morph type split
+                if morph_type_eval:
+                    if morph_tgt.morph_type == Morph.MorphType.ROOT:
+                        f1_root_sum += f1
+                        root_count += 1
+                    elif morph_tgt.morph_type == Morph.MorphType.DERIVATIONAL_AFFIX:
+                        f1_deriv_sum += f1
+                        deriv_count += 1
+                    elif morph_tgt.morph_type == Morph.MorphType.INFLECTIONAL_AFFIX:
+                        f1_infl_sum += f1
+                        infl_count += 1
+
     # Close mistakes file if open
     if mistakes_f:
         mistakes_f.close()
@@ -748,5 +786,18 @@ def evaluate(
             results["grouped_fscore"] = 100.0 * sum(text_averages) / len(text_averages)
         else:
             results["grouped_fscore"] = 0.0
+            
+    # (5) morph type split
+    if morph_type_eval:
+        results["count_root"] = root_count
+        results["count_derivational_affix"] = deriv_count
+        results["count_inflectional_affix"] = infl_count
+        results["f1_on_root"] = 100.0 * f1_root_sum / root_count if root_count > 0 else 100.0
+        results["f1_on_derivational_affix"] = (
+            100.0 * f1_deriv_sum / deriv_count if deriv_count > 0 else 100.0
+        )
+        results["f1_on_inflectional_affix"] = (
+            100.0 * f1_infl_sum / infl_count if infl_count > 0 else 100.0
+        )
 
     return results
