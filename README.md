@@ -24,6 +24,9 @@ Directory `src/`
 - **`morph_classifier.py`**: Contains the machine learning model for classification.
 - **`inter_annotator.py`**: Measures inter-annotator agreement.
 - **`prepare_for_annotation.py`**: Processes file of segmented text and prints it in format suitable for annotation.
+- **`llm_predict.py`**: Runs morpheme-origin prediction with an LLM (OpenRouter API), with batching and automatic evaluation.
+- **`run_llm_sweep.py`**: Runs multiple `llm_predict.py` configurations (model/context-size grid), optionally in parallel.
+- **`evaluate_predictions.py`**: Evaluates a prediction file against gold annotations and can write a mistakes file.
 
 ## Data
 
@@ -158,6 +161,101 @@ To see all available flags and parameters, run:
 ```bash
 python3 src/main.py --help
 ```
+
+## Running LLM Prediction
+
+The repository also contains an LLM-based prediction pipeline:
+
+- `src/llm_predict.py` for one model/configuration
+- `src/run_llm_sweep.py` for model/context-size sweeps
+
+### Single LLM run
+
+Example (predict on `dev`, use train annotations as in-context examples):
+
+```bash
+python3 src/llm_predict.py \
+  --model openai/gpt-5.2 \
+  --input_file data/annotations/dev_for_prediction.tsv \
+  --train_file data/annotations/train.tsv \
+  --train_context_morphs 2000 \
+  --prompt_file prompt_for_ai.txt \
+  --log_file outputs/dev_gpt5_2_trainm_2000.log \
+  --eval_results_file outputs/dev_gpt5_2_results.tsv
+```
+
+Notes:
+
+- API provider defaults to OpenRouter (`--api_provider openrouter`), which keeps backward compatibility.
+- API key resolution:
+  - first tries `--api_key_env` (default `LLM_API_KEY`) if that env var is set
+  - fallback is provider-specific: `OPENROUTER_API_KEY` (openrouter) or `OPENAI_API_KEY` (openai)
+- Predictions are written to an auto-generated `outputs/llm_predictions_*.tsv` file unless `--output_file` is provided.
+- Evaluation runs automatically (unless `--skip_eval`) and appends one line to `--eval_results_file`.
+- Mistakes are written to `outputs/mistakes_*.tsv` unless `--mistakes_file` is provided.
+- If LLM output formatting is imperfect, `llm_predict.py` applies alignment recovery and defaults missing non-numeric morph labels to `ces`.
+
+To use OpenAI API directly:
+
+```bash
+python3 src/llm_predict.py \
+  --api_provider openai \
+  --model gpt-5.2 \
+  --input_file data/annotations/dev_for_prediction.tsv \
+  --train_file data/annotations/train.tsv \
+  --train_context_morphs 2000 \
+  --prompt_file prompt_for_ai.txt
+```
+
+To use another OpenAI-compatible endpoint:
+
+```bash
+python3 src/llm_predict.py \
+  --api_provider openai \
+  --api_endpoint https://your-endpoint.example/v1/chat/completions \
+  --model gpt-5.2 \
+  --input_file data/annotations/dev_for_prediction.tsv \
+  --train_file data/annotations/train.tsv \
+  --train_context_morphs 2000 \
+  --prompt_file prompt_for_ai.txt
+```
+
+### Sweep multiple LLM configs
+
+Example (run two models and three context sizes in parallel):
+
+```bash
+python3 src/run_llm_sweep.py \
+  --models openai/gpt-5-mini,openai/gpt-5.2 \
+  --train_context_sizes 0,50,200 \
+  --parallel 2 \
+  --summary_file outputs/llm_sweep_results.tsv \
+  -- \
+  --input_file data/annotations/test_for_prediction.tsv \
+  --train_file data/annotations/train.tsv \
+  --prompt_file prompt_for_ai.txt
+```
+
+Notes:
+
+- Arguments before `--` are for `run_llm_sweep.py`.
+- Arguments after `--` are forwarded to each `llm_predict.py` run.
+- Sweep logs are written per run into `outputs/llm_sweep_logs/`.
+- Evaluation rows from each run are appended to the common `--summary_file`.
+
+### Evaluate an existing prediction file
+
+You can evaluate any saved prediction file with:
+
+```bash
+python3 src/evaluate_predictions.py \
+  --pred_file outputs/llm_predictions_openai_gpt_5_2_trainm_999999_all_50.tsv \
+  --gold_file data/annotations/test.tsv \
+  --mistakes_file outputs/mistakes_eval_gpt5_2_test.tsv
+```
+
+The script prints standard metrics (`f1score_instance`, `f1score_micro`, native/borrowed, grouped)
+and also morph-type split scores/counts (`root`, `derivational affix`, `inflectional affix`).
 
 ## Baseline Models
 
