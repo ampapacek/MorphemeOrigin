@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import math
 import json
 import os
 import re
+import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -23,6 +25,7 @@ except ImportError:
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 MORPH_TAGS = {"R", "D", "I"}
+LOG_LOCK = threading.Lock()
 
 
 @dataclass
@@ -69,6 +72,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--batch_morph_target", type=int, default=350)
+    parser.add_argument(
+        "--batch_parallelism",
+        type=int,
+        default=1,
+        help=(
+            "How many batches to process concurrently within one model run. "
+            "Default 1 (sequential, backward-compatible)."
+        ),
+    )
     parser.add_argument(
         "--train_context_morphs",
         type=int,
@@ -147,13 +159,14 @@ def now_iso() -> str:
 def log_block(log_stream, title: str, content: str | None = None) -> None:
     if not log_stream:
         return
-    log_stream.write(f"[{now_iso()}] {title}\n")
-    if content:
-        log_stream.write(content)
-        if not content.endswith("\n"):
-            log_stream.write("\n")
-    log_stream.write("\n")
-    log_stream.flush()
+    with LOG_LOCK:
+        log_stream.write(f"[{now_iso()}] {title}\n")
+        if content:
+            log_stream.write(content)
+            if not content.endswith("\n"):
+                log_stream.write("\n")
+        log_stream.write("\n")
+        log_stream.flush()
 
 
 def flatten_morphs(sentences: Sequence[DataSentence]) -> List[Morph]:
@@ -570,6 +583,7 @@ def main() -> None:
                 f"eval_results_file={args.eval_results_file}\n"
                 f"skip_eval={args.skip_eval}\n"
                 f"batch_morph_target={args.batch_morph_target}\n"
+                f"batch_parallelism={args.batch_parallelism}\n"
                 f"max_retries={args.max_retries}\n"
                 f"temperature={args.temperature}\n"
                 f"max_tokens={args.max_tokens}\n"
@@ -594,12 +608,37 @@ def main() -> None:
         print(
             f"Loaded {len(all_input_sentences)} sentences from {args.input_file}; "
             f"selected {len(input_sentences)} sentence(s) for processing. "
-            f"Running {len(batches)} batch requests with target {args.batch_morph_target} morphs per batch."
+            f"Running {len(batches)} batch requests with target {args.batch_morph_target} morphs per batch. "
+            f"Batch parallelism: {args.batch_parallelism}."
         )
 
-        for batch_idx, batch in enumerate(batches, start=1):
+        if args.batch_parallelism <= 0:
+            raise ValueError("--batch_parallelism must be >= 1.")
+
+        completed_batch_indices: set[int] = set()
+        last_saved_end = 0
+
+        def checkpoint_contiguous_progress() -> None:
+            nonlocal last_saved_end
+            contiguous = 0
+            while contiguous < len(batches) and contiguous in completed_batch_indices:
+                contiguous += 1
+            if contiguous == 0:
+                return
+            save_end = batches[contiguous - 1].end
+            if save_end <= last_saved_end:
+                return
+            pprint_sentences(prediction_sentences[:save_end], output_file)
+            log_block(
+                log_stream,
+                f"Checkpoint saved through batch {contiguous}/{len(batches)}",
+                f"output_file={output_file}\nsentences_saved={save_end}",
+            )
+            last_saved_end = save_end
+
+        def process_batch(batch_idx: int, batch: SentenceBatch) -> tuple[int, list[DataSentence]]:
             batch_input = input_sentences[batch.start : batch.end]
-            batch_prediction = prediction_sentences[batch.start : batch.end]
+            batch_prediction = remove_targets(batch_input)
             expected_morphs = flatten_morphs(batch_input)
             batch_text = render_sentences(batch_input, include_etymology=False)
             log_block(
@@ -634,7 +673,6 @@ def main() -> None:
                 }
             )
 
-            assigned = False
             for attempt in range(1, args.max_retries + 1):
                 try:
                     request_log = {
@@ -705,7 +743,6 @@ def main() -> None:
                             f"defaulted={recovery_stats['missing']})."
                         )
 
-                    assigned = True
                     print(
                         f"Batch {batch_idx}/{len(batches)} done: "
                         f"{batch.end - batch.start} sentences, {batch.morph_count} morphs."
@@ -715,14 +752,9 @@ def main() -> None:
                         f"Batch {batch_idx} completed",
                         f"status=success\nelapsed_seconds={round(call_elapsed, 3)}",
                     )
-                    # Persist progress after each finished batch.
-                    pprint_sentences(prediction_sentences[: batch.end], output_file)
-                    log_block(
-                        log_stream,
-                        f"Batch {batch_idx} checkpoint saved",
-                        f"output_file={output_file}\nsentences_saved={batch.end}",
-                    )
-                    break
+                    if args.sleep_between_batches_sec > 0:
+                        time.sleep(args.sleep_between_batches_sec)
+                    return batch_idx, batch_prediction
                 except (requests.RequestException, ValueError, KeyError) as exc:
                     log_block(
                         log_stream,
@@ -737,11 +769,34 @@ def main() -> None:
                     print(f"Batch {batch_idx} attempt {attempt} failed: {exc}. Retrying in {wait:.1f}s.")
                     time.sleep(wait)
 
-            if not assigned:
-                raise RuntimeError(f"Failed to assign predictions for batch {batch_idx}.")
+            raise RuntimeError(f"Failed to assign predictions for batch {batch_idx}.")
 
-            if args.sleep_between_batches_sec > 0:
-                time.sleep(args.sleep_between_batches_sec)
+        max_workers = min(args.batch_parallelism, max(1, len(batches)))
+        if max_workers == 1:
+            for idx0, batch in enumerate(batches):
+                _, batch_prediction = process_batch(idx0 + 1, batch)
+                prediction_sentences[batch.start : batch.end] = batch_prediction
+                completed_batch_indices.add(idx0)
+                checkpoint_contiguous_progress()
+        else:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_to_idx = {
+                    executor.submit(process_batch, idx0 + 1, batch): idx0
+                    for idx0, batch in enumerate(batches)
+                }
+                for future in as_completed(future_to_idx):
+                    idx0 = future_to_idx[future]
+                    batch = batches[idx0]
+                    try:
+                        _, batch_prediction = future.result()
+                    except Exception:
+                        for pending in future_to_idx:
+                            if not pending.done():
+                                pending.cancel()
+                        raise
+                    prediction_sentences[batch.start : batch.end] = batch_prediction
+                    completed_batch_indices.add(idx0)
+                    checkpoint_contiguous_progress()
 
         print(f"Predictions written to: {output_file}")
         log_block(log_stream, "Prediction run finished", f"predictions_file={output_file}")
