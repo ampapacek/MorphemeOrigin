@@ -194,6 +194,7 @@ Notes:
 - Evaluation runs automatically (unless `--skip_eval`) and appends one line to `--eval_results_file`.
 - Mistakes are written to `outputs/mistakes_*.tsv` unless `--mistakes_file` is provided.
 - If LLM output formatting is imperfect, `llm_predict.py` applies alignment recovery and defaults missing non-numeric morph labels to `ces`.
+- You can parallelize batches within one model run using `--batch_parallelism` (default `1`).
 
 To use OpenAI API directly:
 
@@ -235,6 +236,23 @@ python3 src/run_llm_sweep.py \
   --train_file data/annotations/train.tsv \
   --prompt_file prompt_for_ai.txt
 ```
+
+Example with parallel batches inside each model:
+
+```bash
+python3 src/run_llm_sweep.py \
+  --models openai/gpt-5-mini,openai/gpt-5.2 \
+  --train_context_sizes 200 \
+  --parallel 2 \
+  --summary_file outputs/llm_sweep_results.tsv \
+  -- \
+  --input_file data/annotations/test_for_prediction.tsv \
+  --train_file data/annotations/train.tsv \
+  --batch_parallelism 5 \
+  --prompt_file prompt_for_ai.txt
+```
+
+In this example, both model runs execute in parallel and each run can issue up to 5 batch requests concurrently (up to 10 concurrent LLM requests total).
 
 Notes:
 
