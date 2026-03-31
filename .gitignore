@@ -69,3 +69,10 @@ outputs*/
 output/
 out/
 *.log
+
+# Generated notebook artifacts
+predictions/
+trained_models/
+.mplconfig/
+**/.mplconfig/
+**/__pycache__/
