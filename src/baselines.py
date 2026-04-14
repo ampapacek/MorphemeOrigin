@@ -263,8 +263,8 @@ class WordDictModel(Model):
         whole_text = " ".join(sentence.sentence for sentence in predictions)
         try:
             lemmata = self.get_lemmata(whole_text)
-        except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
-            # URLError, HTTPError, or a socket-related OSError indicates network trouble
+        except (requests.exceptions.RequestException, urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+            # HTTP/client/network failures should follow the model's network-error path
             raise WordDictModel.NetworkError(f"Network error contacting MorphoDiTa")        
         
         # Collect all words in the same order.
