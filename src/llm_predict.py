@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
         description="Predict morpheme etymology with an LLM in sentence-safe batches."
     )
     parser.add_argument("--model", type=str, required=True, help="Model ID.")
-    parser.add_argument("--input_file", type=str, default="data/annotations/dev_for_prediction.tsv")
+    parser.add_argument("--input_file", type=str, default="data/annotations/dev.tsv")
     parser.add_argument(
         "--sentences",
         type=float,
@@ -58,7 +58,7 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help=(
             "Gold annotations for evaluation. "
-            "If omitted, tries to derive from --input_file by replacing *_for_prediction.tsv with *.tsv."
+            "If omitted, uses --input_file directly, except *_for_prediction.tsv is mapped to the matching *.tsv file."
         ),
     )
     parser.add_argument("--prompt_file", type=str, default="prompt_for_ai.txt")
@@ -423,8 +423,7 @@ def resolve_gold_file(gold_file: str | None, input_file: str) -> str:
         return gold_file
     if input_file.endswith("_for_prediction.tsv"):
         return input_file[: -len("_for_prediction.tsv")] + ".tsv"
-    else:
-        return None
+    return input_file
 
 
 def resolve_mistakes_file(mistakes_file: str | None, output_file: str) -> str:

@@ -176,7 +176,7 @@ Example (predict on `dev`, use train annotations as in-context examples):
 ```bash
 python3 src/llm_predict.py \
   --model openai/gpt-5.2 \
-  --input_file data/annotations/dev_for_prediction.tsv \
+  --input_file data/annotations/dev.tsv \
   --train_file data/annotations/train.tsv \
   --train_context_morphs 2000 \
   --prompt_file prompt_for_ai.txt \
@@ -190,6 +190,8 @@ Notes:
 - API key resolution:
   - first tries `--api_key_env` (default `LLM_API_KEY`) if that env var is set
   - fallback is provider-specific: `OPENROUTER_API_KEY` (openrouter) or `OPENAI_API_KEY` (openai)
+- Existing annotated files like `data/annotations/dev.tsv` and `data/annotations/test.tsv` work directly because `llm_predict.py` strips targets before sending batches to the model.
+- For custom unlabeled inputs, provide `--gold_file` only if you want evaluation, otherwise use `--skip_eval`.
 - Predictions are written to an auto-generated `outputs/llm_predictions_*.tsv` file unless `--output_file` is provided.
 - Evaluation runs automatically (unless `--skip_eval`) and appends one line to `--eval_results_file`.
 - Mistakes are written to `outputs/mistakes_*.tsv` unless `--mistakes_file` is provided.
@@ -202,7 +204,7 @@ To use OpenAI API directly:
 python3 src/llm_predict.py \
   --api_provider openai \
   --model gpt-5.2 \
-  --input_file data/annotations/dev_for_prediction.tsv \
+  --input_file data/annotations/dev.tsv \
   --train_file data/annotations/train.tsv \
   --train_context_morphs 2000 \
   --prompt_file prompt_for_ai.txt
@@ -215,7 +217,7 @@ python3 src/llm_predict.py \
   --api_provider openai \
   --api_endpoint https://your-endpoint.example/v1/chat/completions \
   --model gpt-5.2 \
-  --input_file data/annotations/dev_for_prediction.tsv \
+  --input_file data/annotations/dev.tsv \
   --train_file data/annotations/train.tsv \
   --train_context_morphs 2000 \
   --prompt_file prompt_for_ai.txt
@@ -232,7 +234,7 @@ python3 src/run_llm_sweep.py \
   --parallel 2 \
   --summary_file outputs/llm_sweep_results.tsv \
   -- \
-  --input_file data/annotations/test_for_prediction.tsv \
+  --input_file data/annotations/test.tsv \
   --train_file data/annotations/train.tsv \
   --prompt_file prompt_for_ai.txt
 ```
@@ -246,7 +248,7 @@ python3 src/run_llm_sweep.py \
   --parallel 2 \
   --summary_file outputs/llm_sweep_results.tsv \
   -- \
-  --input_file data/annotations/test_for_prediction.tsv \
+  --input_file data/annotations/test.tsv \
   --train_file data/annotations/train.tsv \
   --batch_parallelism 5 \
   --prompt_file prompt_for_ai.txt
