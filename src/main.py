@@ -113,7 +113,7 @@ def parse_args():
     parser.add_argument("--svm_kernel", type=str, default='rbf',
                         help="Kernel for the svm model (rbf,poly,linear,sigmoid,precomputed) (default: 'rbf').")
     parser.add_argument("--early_stopping", action="store_true",
-                        help="Sets 10 % of data aside for evaluation. Stop training when the loss doesnt improve on the evluation set.")
+                        help="Sets 10 percent of data aside for evaluation. Stop training when the loss doesnt improve on the evluation set.")
     
     # saving and loading
     parser.add_argument("--save_model_path", type=str, default=None,
