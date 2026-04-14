@@ -415,8 +415,8 @@ class MorphClassifier(Model):
                         continue
 
                     rows.append({
-                        "text": morph.text,
-                        "word": word.text,
+                        "text": morph.text.lower() if self.lower_case else morph.text,
+                        "word": word.text.lower() if self.lower_case else word.text,
                         "morph_type": morph.morph_type.value,
                         "morph_position": morph.morph_position.value
                     })
