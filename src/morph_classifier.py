@@ -423,7 +423,7 @@ class MorphClassifier(Model):
                     morph_refs.append(morph)
 
         if not rows:
-            return data  # Nothing to predict
+            return updated_data  # Nothing to predict
 
         df_all = pd.DataFrame(rows)
 
