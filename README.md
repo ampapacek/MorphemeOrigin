@@ -19,7 +19,7 @@ Directory `src/`
 - **`main.py`**: The main script to run experiments.
 - **`utils.py`**: Contains utility functions used across the project.
 - **`baselines.py`**: Implements baseline methods for comparison.
-- **`embedding_transformer.py`**: Handles the use of embeddings.
+- **`data_transformers.py`**: Handles the use of embeddings.
 - **`model.py`**: Parent class for the models.
 - **`morph_classifier.py`**: Contains the machine learning model for classification.
 - **`inter_annotator.py`**: Measures inter-annotator agreement.
