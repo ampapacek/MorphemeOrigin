@@ -110,7 +110,6 @@ The primary machine learning model in this project is defined in `morph_classifi
 - **Multi-Label vs Single-Label**  
   - By default, each etymology sequence is treated as a single label (e.g., "lat,ell").  
   - With `--multi_label`, the sequence is split into separate labels (["lat", "ell"]) and for each language individually decides if it will be in the target or not.  The model uses a `MultiLabelBinarizer` + a `OneVsRestClassifier`.  
-  - **Fallback Single-Label**: If multi-label prediction fails (returns an empty set), you can optionally train a single-label pipeline in parallel by setting `--fallback_single_label`; the model then falls back to that pipeline if the multi-label pipeline yields no labels.
 
 - **Extending train set and Filtering Low-Frequency Labels**  
   - To extend the train set using the roots and affixes dictionaries use `--extend_train`.   It increases the training set by adding single-morph sentences from the provided roots and affixes dictionaries. It significantly expands the amount of training data, the quality may not match the regular annotated set.
