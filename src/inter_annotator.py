@@ -14,18 +14,6 @@ Optionally save every disagreement into a TSV file.
 from utils import load_annotations,calculate_cohen_kappa,evaluate
 import argparse, sys, os
 
-def get_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(
-        description="Inter‑annotator agreement of morpheme‑level etymologies"
-    )
-    ap.add_argument("annotator1", help="TSV produced by annotator 1")
-    ap.add_argument("annotator2", help="TSV produced by annotator 2")
-    ap.add_argument(
-        "-o", "--out‑mistakes", metavar="FILE",
-        help="Write morphs where annotators disagree to FILE (TSV)"
-    )
-    return ap.parse_args()
-
 # default paths 
 DEF_ANN1   = "data/annotations/dev.tsv"
 DEF_ANN2   = "data/annotations/dev_annotator2.tsv"
