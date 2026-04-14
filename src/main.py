@@ -117,9 +117,9 @@ def parse_args():
     
     # saving and loading
     parser.add_argument("--save_model_path", type=str, default=None,
-                        help="Path where to save the trained model. Automaticly enables loading. (default: empty => dont save model).")
+                        help="Path where to save the trained model. Automatically enables saving. (default: empty => dont save model).")
     parser.add_argument("--load_model_path", type=str, default=None,
-                        help="Path with the trained model for loading. Automaticly enables saving. (default: empty => dont load model).")
+                        help="Path with the trained model for loading. Automatically enables loading. (default: empty => dont load model).")
     parser.add_argument("--save", action="store_true",
                         help="If to save the trained model. If the path is not specified, model.name + .pkl is used.")
     parser.add_argument("--load", action="store_true",
