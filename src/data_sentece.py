@@ -71,7 +71,7 @@ class Morph:
 
     morph_position: "Morph.MorphPosition" = None
 
-    def __init__(self, text: str, etymology: List[str] = [],
+    def __init__(self, text: str, etymology: List[str] = None,
                  morph_type: "Morph.MorphType" = None,
                  position: "Morph.MorphPosition" = None):
         """
@@ -86,7 +86,7 @@ class Morph:
                 Defaults to UNDEFINED.
         """
         self.text = text
-        self.etymology = etymology
+        self.etymology = list(etymology) if etymology is not None else []
         self.morph_type = morph_type if morph_type is not None else Morph.MorphType.UNDEFINED
         self.morph_position = position if position is not None else Morph.MorphPosition.UNDEFINED
 
@@ -101,8 +101,8 @@ class Morph:
     
 @dataclass
 class Word:
-    def __init__(self, morphs:List[Morph] = []):
-        self.morphs = morphs
+    def __init__(self, morphs:List[Morph] = None):
+        self.morphs = list(morphs) if morphs is not None else []
         
     # A list of Morph objects that constitute the word.
     morphs: List[Morph]
@@ -181,4 +181,3 @@ class DataSentence:
     
     def __str__(self):
         return self.sentence
-
