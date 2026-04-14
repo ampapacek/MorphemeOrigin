@@ -21,7 +21,7 @@ The output format will be:
         ...
 
 Usage example:
-    python annotations/prepare_for_annotation.py --input annotations/archive/ces.sentence.dev.tsv --output annotations/dev_for_annotation.tsv
+    python src/prepare_for_annotation.py --input data/annotations/original_sentences/ces.sentence.dev.tsv --output data/annotations/dev_for_annotation.tsv
 """
 
 import argparse
@@ -41,14 +41,14 @@ def setup_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '-i', "--input",
         type=str,
-        default="annotations/ces.sentence.dev.tsv",
-        help="Path to the input TSV file (default: annotations/ces.sentence.dev.tsv)"
+        default="data/annotations/original_sentences/ces.sentence.dev.tsv",
+        help="Path to the input TSV file (default: data/annotations/original_sentences/ces.sentence.dev.tsv)"
     )
     parser.add_argument(
         "-o", "--output",
         type=str,
-        default="annotations/dev_for_annotation.tsv",
-        help="Path to the output file (default: annotations/dev_for_annotation.tsv)"
+        default="data/annotations/dev_for_annotation.tsv",
+        help="Path to the output file (default: data/annotations/dev_for_annotation.tsv)"
     )
     parser.add_argument(
         "-v", "--verbose",
