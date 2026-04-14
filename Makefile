@@ -23,6 +23,12 @@ venv:
 	  . MorphOriginVenv/bin/activate && pip install -r requirements.txt; \
 	fi
 
+venv_recreate:
+	@echo "Recreating virtual environment 'MorphOriginVenv' using $(PYTHON_BIN)"
+	rm -rf MorphOriginVenv
+	@$(PYTHON_BIN) -m venv MorphOriginVenv
+	@. MorphOriginVenv/bin/activate && pip install -r requirements.txt
+
 # Run the main Python script using the MorphOriginVenv environment
 run: venv
 	@echo "Running Morph Etymology evaluation..."
