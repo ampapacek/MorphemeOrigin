@@ -40,6 +40,6 @@ clean:
 	rm -f mistakes*.tsv morphs*stats.tsv languages*stats.tsv annotator_differences.tsv languages*stats_extended.tsv morphs*stats_extended.tsv
 	@if [ -d "outputs" ]; then rm -f outputs/*; fi
 # Compute Inter-Annotator Agreement
-agreement:
-	@echo "Computing Inter Annotator Agreement on annotations/dev.tsv and annotations/dev_annotator2.tsv..."
-	@python3  src/inter_annotator.py
+agreement: venv
+	@echo "Computing Inter Annotator Agreement on data/annotations/dev.tsv and data/annotations/dev_annotator2.tsv..."
+	@. MorphOriginVenv/bin/activate && python3 src/inter_annotator.py
