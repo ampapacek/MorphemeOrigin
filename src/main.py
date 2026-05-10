@@ -26,7 +26,8 @@ from utils import (
     write_morph_statistics,
     count_sentences_words_morphs,
     single_morph_sentences_from_dict,
-    pprint_sentences
+    pprint_sentences,
+    collect_morph_texts,
 )
 from baselines import (
     DummyModel,
@@ -34,7 +35,7 @@ from baselines import (
     MorphDictModel,
     WordDictModel
 )
-from morph_classifier import MorphClassifier  
+from morph_classifier import MorphClassifier
 from model import Model
 
 def parse_args():
@@ -98,8 +99,8 @@ def parse_args():
     parser.add_argument("--model_name", type=str, default=None,
                         help="Name for the MorphClassifier model (default: None)")
     parser.add_argument("--classifier_type", type=str, default="mlp",
-                        choices=["svm", "mlp", "lr"],
-                        help="Classifier type: 'svm', 'mlp', or 'lr' (default: mlp).")
+                        choices=["svm", "mlp", "lr", "gru"],
+                        help="Classifier type: 'svm', 'mlp', 'lr', or 'gru' (default: mlp).")
     parser.add_argument("--mlp_ensemble_size", type=int, default=1,
                         help="Number of MLP classifiers in an ensemble (default: 1).")
     parser.add_argument("--mlp_hidden_size", type=int, default=30,
@@ -114,6 +115,33 @@ def parse_args():
                         help="Kernel for the svm model (rbf,poly,linear,sigmoid,precomputed) (default: 'rbf').")
     parser.add_argument("--early_stopping", action="store_true",
                         help="Sets 10 percent of data aside for evaluation. Stop training when the loss doesnt improve on the evluation set.")
+    
+    # GRU
+    parser.add_argument("--gru_char_emb_dim", type=int, default=64,
+                        help="Character embedding size for the GRU classifier (default: 64).")
+    parser.add_argument("--gru_char_hidden_dim", type=int, default=64,
+                        help="Hidden size of the bidirectional character GRU (default: 64).")
+    parser.add_argument("--gru_type_emb_dim", type=int, default=16,
+                        help="Embedding size for morph type in the GRU classifier (default: 16).")
+    parser.add_argument("--gru_position_emb_dim", type=int, default=16,
+                        help="Embedding size for morph position in the GRU classifier (default: 16).")
+    parser.add_argument("--gru_hidden_dim", type=int, default=256,
+                        help="Hidden size of the bidirectional morph-sequence GRU (default: 256).")
+    parser.add_argument("--gru_dropout", type=float, default=0.5,
+                        help="Dropout used in the GRU classifier (default: 0.5).")
+    parser.add_argument("--gru_batch_size", type=int, default=128,
+                        help="Batch size for the GRU classifier (default: 128).")
+    parser.add_argument("--gru_epochs", type=int, default=25,
+                        help="Maximum number of training epochs for the GRU classifier (default: 25).")
+    parser.add_argument("--gru_learning_rate", type=float, default=0.001,
+                        help="Learning rate for the GRU classifier (default: 0.001).")
+    parser.add_argument("--gru_weight_decay", type=float, default=0.0001,
+                        help="Weight decay for the GRU classifier (default: 0.0001).")
+    parser.add_argument("--gru_patience", type=int, default=10,
+                        help="Early-stopping patience on validation F1 for the GRU classifier (default: 10).")
+    parser.add_argument("--gru_sequence_scope", type=str, default="word",
+                        choices=["word", "sentence"],
+                        help="Process morphs either word-by-word or as one sequence per sentence in the GRU classifier (default: word).")
     
     # saving and loading
     parser.add_argument("--save_model_path", type=str, default=None,
@@ -170,6 +198,7 @@ def parse_args():
 def test_model(
     model: Model,
     target_data,
+    train_morph_texts = None,
     baseline_f1: float = 0,
     file_mistakes: str = None,
     model_name: str = None,
@@ -214,7 +243,16 @@ def test_model(
                 
 
         # Evaluate
-        evaluation_results = evaluate(predictions, target_data, instance_eval=True,micro_eval=True,native_borrowed_eval=True,group_by_text_eval=True, file_mistakes=file_mistakes)
+        evaluation_results = evaluate(
+            predictions,
+            target_data,
+            instance_eval=True,
+            micro_eval=True,
+            native_borrowed_eval=True,
+            group_by_text_eval=True,
+            file_mistakes=file_mistakes,
+            train_morph_texts=train_morph_texts,
+        )
         if file_mistakes and verbose:
             print(f"Incorrect predictions printed to file {file_mistakes}")
         f_score = evaluation_results['f1score_instance']
@@ -222,6 +260,10 @@ def test_model(
         f_score_on_native = evaluation_results['f1_on_native']
         f_score_on_borrowed = evaluation_results['f1_on_borrowed']
         f_score_grouped = evaluation_results['grouped_fscore']
+        f_score_seen = evaluation_results['f1_on_seen_in_train']
+        f_score_unseen = evaluation_results['f1_on_unseen_in_train']
+        count_seen = evaluation_results['count_seen_in_train']
+        count_unseen = evaluation_results['count_unseen_in_train']
         improvement = None
         if baseline_f1 and baseline_f1 > 0:
             improvement = relative_error_reduction(baseline_f1, f_score)
@@ -235,6 +277,8 @@ def test_model(
             # print(f"Micro F-score:                         {f_score_micro:.1f} %")
             print(f"F-score on native morphs:              {f_score_on_native:.1f} %")
             print(f"F-score on borrowed morphs:            {f_score_on_borrowed:.1f} %")
+            print(f"F-score on train-seen morphs:          {f_score_seen:.1f} % (n={count_seen})")
+            print(f"F-score on train-unseen morphs:        {f_score_unseen:.1f} % (n={count_unseen})")
             print(f"Grouped by unique morph text F-score:  {f_score_grouped:.1f} %")
             print()
         # If a results_file was given, append a TSV line with the metrics
@@ -252,6 +296,8 @@ def test_model(
                     f"{improvement_str}\t"
                     f"{f_score_on_native:.1f}\t"
                     f"{f_score_on_borrowed:.1f}\t"
+                    f"{f_score_seen:.1f}\t"
+                    f"{f_score_unseen:.1f}\t"
                     f"{f_score_grouped:.1f}\n"
                 )
             if verbose:
@@ -290,7 +336,18 @@ def main():
         if directory: 
             os.makedirs(directory, exist_ok=True)
         with open(args.results_file, 'at') as file_results:
-            print('Name','F1 standard', 'Relative error reduction', 'F1 on native', 'F1 on borrowed', 'F1 unique averaged',sep='\t',file=file_results)
+            print(
+                'Name',
+                'F1 standard',
+                'Relative error reduction',
+                'F1 on native',
+                'F1 on borrowed',
+                'F1 on train-seen',
+                'F1 on train-unseen',
+                'F1 unique averaged',
+                sep='\t',
+                file=file_results,
+            )
     # Load dev/test data
     test_sentences_target = load_annotations(args.target_file)
     # Load train data
@@ -305,6 +362,8 @@ def main():
                         morph.etymology = ['ces']
                     else:
                         morph.etymology = ['borrowed']
+
+    train_morph_texts = collect_morph_texts(train_sentences)
 
     sentence_count_test,word_count_test,morph_count_test = count_sentences_words_morphs(test_sentences_target)
     sentence_count_train,word_count_train,morph_count_train = count_sentences_words_morphs(train_sentences)
@@ -328,7 +387,7 @@ def main():
     mistakes_file = None
     if args.print_mistakes:
         mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{dummy_model.name}.tsv")
-    dummy_result = test_model(dummy_model,test_sentences_target,file_mistakes=mistakes_file,verbose=dummy_verbose,results_file=results_dummy)
+    dummy_result = test_model(dummy_model,test_sentences_target,train_morph_texts=train_morph_texts,file_mistakes=mistakes_file,verbose=dummy_verbose,results_file=results_dummy)
     baseline_f1 = dummy_result['f1score_instance']
 
     if args.enable_mfo or args.enable_baselines or args.enable_all:
@@ -338,6 +397,7 @@ def main():
         if args.print_mistakes:
             mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{mfo_model.name}.tsv")
         test_model(mfo_model, test_sentences_target,
+                  train_morph_texts=train_morph_texts,
                   baseline_f1=baseline_f1, file_mistakes=mistakes_file,verbose=(not args.quiet),results_file=args.results_file)
 
     # Possibly run MorphDictModel
@@ -347,6 +407,7 @@ def main():
         if args.print_mistakes:
             mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{md_model.name}.tsv")
         test_model(md_model, test_sentences_target,
+                  train_morph_texts=train_morph_texts,
                   baseline_f1=baseline_f1, file_mistakes=mistakes_file,verbose=(not args.quiet),results_file=args.results_file)
 
     # Possibly run WordDictModel
@@ -356,6 +417,7 @@ def main():
         if args.print_mistakes:
             mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{wd_model.name}.tsv")
         test_model(wd_model, test_sentences_target,
+                  train_morph_texts=train_morph_texts,
                   baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet),results_file=args.results_file)
 
     # Possibly run MorphClassifier
@@ -363,6 +425,7 @@ def main():
         if args.extend_train:
             train_sentences += single_morph_sentences_from_dict(args.root_etym_file)
             train_sentences += single_morph_sentences_from_dict(args.affixes_file)
+            train_morph_texts = collect_morph_texts(train_sentences)
             if args.print_stats:
                 write_morph_statistics(train_sentences,languages_file=stats_languages_train_file.replace('.tsv','_extended.tsv'),morphs_file=stats_morphs_train_file.replace('.tsv','_extended.tsv'))
             sentence_count_extended,word_count_extended,morph_count_extended = count_sentences_words_morphs(train_sentences)
@@ -376,37 +439,70 @@ def main():
 
         char_ngram_range = (args.char_ngram_min, args.char_ngram_max)
 
-        learning_model = MorphClassifier(
-            name=args.model_name,
-            random_state=args.random_state,
-            classifier_type=args.classifier_type,
-            mlp_ensemble_size=args.mlp_ensemble_size,
-            mlp_hidden_size=args.mlp_hidden_size,
-            svm_c=args.svm_c,
-            svm_kernel=args.svm_kernel,
+        if args.classifier_type == "gru":
+            from torch_gru_classifier import TorchGRUClassifier
 
-            use_char_ngrams=(not args.disable_char_ngrams),
-            char_ngram_range=char_ngram_range,
-            use_morph_type=(not args.disable_morph_type),
-            use_morph_position=(not args.disable_morph_position),
-            use_vowel_start_end_features=(not args.disable_vowels),
+            learning_model = TorchGRUClassifier(
+                name=args.model_name,
+                random_state=args.random_state,
+                lower_case=(not args.keep_case),
+                min_label_freq=args.min_seq_occurrence,
+                verbose=(not args.quiet),
+                validation_data=test_sentences_target,
+                char_emb_dim=args.gru_char_emb_dim,
+                char_hidden_dim=args.gru_char_hidden_dim,
+                type_emb_dim=args.gru_type_emb_dim,
+                position_emb_dim=args.gru_position_emb_dim,
+                hidden_dim=args.gru_hidden_dim,
+                dropout=args.gru_dropout,
+                batch_size=args.gru_batch_size,
+                epochs=args.gru_epochs,
+                learning_rate=args.gru_learning_rate,
+                weight_decay=args.gru_weight_decay,
+                patience=args.gru_patience,
+                use_morph_type=(not args.disable_morph_type),
+                use_morph_position=(not args.disable_morph_position),
+                use_vowel_start_end_features=(not args.disable_vowels),
+                use_morph_embedding=args.use_morph_embedding,
+                use_word_embedding=args.use_word_embedding,
+                embedding_dimension=args.embedding_dimension,
+                fasttext_model_path=args.fasttext_model_path,
+                multi_label=args.multi_label,
+                sequence_scope=args.gru_sequence_scope,
+            )
+        else:
+            learning_model = MorphClassifier(
+                name=args.model_name,
+                random_state=args.random_state,
+                classifier_type=args.classifier_type,
+                mlp_ensemble_size=args.mlp_ensemble_size,
+                mlp_hidden_size=args.mlp_hidden_size,
+                svm_c=args.svm_c,
+                svm_kernel=args.svm_kernel,
 
-            fasttext_model_path=args.fasttext_model_path,
-            use_morph_embedding= args.use_morph_embedding,
-            use_word_embedding= args.use_word_embedding,
-            embedding_dimension=args.embedding_dimension,
+                use_char_ngrams=(not args.disable_char_ngrams),
+                char_ngram_range=char_ngram_range,
+                use_morph_type=(not args.disable_morph_type),
+                use_morph_position=(not args.disable_morph_position),
+                use_vowel_start_end_features=(not args.disable_vowels),
 
-            lower_case=(not args.keep_case),
-            verbose=(not args.quiet),
-            multi_label=args.multi_label,
-            min_label_freq=args.min_seq_occurrence,
-            early_stopping=args.early_stopping,
-            mlp_alpha=args.mlp_alpha,
-            mlp_max_iter=args.mlp_max_iter
-        )
+                fasttext_model_path=args.fasttext_model_path,
+                use_morph_embedding= args.use_morph_embedding,
+                use_word_embedding= args.use_word_embedding,
+                embedding_dimension=args.embedding_dimension,
+
+                lower_case=(not args.keep_case),
+                verbose=(not args.quiet),
+                multi_label=args.multi_label,
+                min_label_freq=args.min_seq_occurrence,
+                early_stopping=args.early_stopping,
+                mlp_alpha=args.mlp_alpha,
+                mlp_max_iter=args.mlp_max_iter
+            )
 
         if args.load and not args.load_model_path:
-            args.load_model_path = learning_model.name + '.pkl'
+            default_extension = ".pt" if args.classifier_type == "gru" else ".pkl"
+            args.load_model_path = learning_model.name + default_extension
         if args.mistakes_file == None and args.print_mistakes:
             mistakes_file = os.path.join(args.outputs_dir, f"mistakes_{learning_model.name}.tsv")
         else:
@@ -428,13 +524,14 @@ def main():
 
         try:
             test_model(learning_model, test_sentences_target,
+                    train_morph_texts=train_morph_texts,
                     baseline_f1=baseline_f1, file_mistakes=mistakes_file, verbose=(not args.quiet),
                     results_file=args.results_file, predictions_file=args.predictions_file)
         except Exception as err:
             abort("Evaluation (testing of model) failed.", err)
 
-
-        save_path = (args.save_model_path if args.save_model_path else (learning_model.name + ".pkl" if args.save else None))
+        default_extension = ".pt" if args.classifier_type == "gru" else ".pkl"
+        save_path = (args.save_model_path if args.save_model_path else (learning_model.name + default_extension if args.save else None))
         if save_path:
             try:
                 learning_model.save(save_path)

@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 import argparse
 
-from utils import evaluate, load_annotations
+from utils import evaluate, load_annotations, collect_morph_texts
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate predicted morpheme etymology annotations.")
     parser.add_argument("--pred_file", type=str, required=True, help="Predicted annotation file.")
     parser.add_argument("--gold_file", type=str, required=True, help="Gold annotation file.")
+    parser.add_argument(
+        "--train_file",
+        type=str,
+        default=None,
+        help="Optional training annotation file to report train-seen vs. train-unseen metrics.",
+    )
     parser.add_argument(
         "--mistakes_file",
         type=str,
@@ -21,6 +27,7 @@ def main() -> None:
     args = parse_args()
     predictions = load_annotations(args.pred_file)
     gold = load_annotations(args.gold_file)
+    train_morph_texts = collect_morph_texts(load_annotations(args.train_file)) if args.train_file else None
 
     results = evaluate(
         predictions,
@@ -31,6 +38,7 @@ def main() -> None:
         group_by_text_eval=True,
         morph_type_eval=True,
         file_mistakes=args.mistakes_file,
+        train_morph_texts=train_morph_texts,
     )
 
     print("Evaluation:")
@@ -47,6 +55,10 @@ def main() -> None:
         "count_root",
         "count_derivational_affix",
         "count_inflectional_affix",
+        "f1_on_seen_in_train",
+        "f1_on_unseen_in_train",
+        "count_seen_in_train",
+        "count_unseen_in_train",
     ]:
         if key in results:
             value = results[key]

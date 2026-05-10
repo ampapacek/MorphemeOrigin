@@ -6,3 +6,4 @@ scikit-learn==1.6.1
 scipy==1.15.2
 urllib3==2.3.0
 matplotlib==3.10.1
+torch==2.11.0

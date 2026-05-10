@@ -69,6 +69,7 @@ outputs*/
 output/
 out/
 *.log
+SVOC2026/
 
 # Generated notebook artifacts
 predictions/

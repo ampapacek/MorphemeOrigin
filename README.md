@@ -131,6 +131,7 @@ The primary machine learning model is implemented in [`src/morph_classifier.py`]
   - `--classifier_type svm` with `--svm_c` and `--svm_kernel`
   - `--classifier_type mlp` with options such as `--mlp_hidden_size`, `--mlp_alpha`, `--mlp_max_iter`, and `--mlp_ensemble_size`
   - `--classifier_type lr`
+  - `--classifier_type gru` for a bidirectional PyTorch GRU over morph sequences, with character encodings, optional morph type and position embeddings, optional vowel features, optional frozen fastText embeddings, and `--gru_sequence_scope word|sentence` for word-level or sentence-level sequence processing
 
 - **Feature extraction**
   - Character n-grams are enabled by default and can be disabled with `--disable_char_ngrams`

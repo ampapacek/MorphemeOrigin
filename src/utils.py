@@ -1,7 +1,7 @@
 import sys
 import random
 import os
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Set
 from data_sentece import DataSentence,Word,Morph
 from collections import Counter, defaultdict
 
@@ -285,7 +285,29 @@ def write_morph_statistics(target_sentences: List["DataSentence"], languages_fil
             for morph_text, etymology_counter in sorted(
                 morphs.items(), key=lambda item: (sum(item[1].values()),len(item[1])), reverse=True):
                 print(f"{morph_text}\t{dict(etymology_counter)}", file=morphs_f)
-                
+
+
+def collect_morph_texts(sentences: List["DataSentence"], only_labeled: bool = True) -> Set[str]:
+    """
+    Collect unique morph texts from annotated sentences.
+
+    Args:
+        sentences: Source annotations.
+        only_labeled: If True, skip morphs without etymology labels.
+
+    Returns:
+        Set of morph texts as they appear in the annotations.
+    """
+    texts = set()
+    for sentence in sentences:
+        for word in sentence.words:
+            for morph in word:
+                if only_labeled and not morph.etymology:
+                    continue
+                texts.add(morph.text)
+    return texts
+
+
 def count_sentences_words_morphs(sentences:List["DataSentence"]):
     sentence_count = len(sentences)
     word_count = 0
@@ -551,7 +573,8 @@ def evaluate(
     native_borrowed_eval: bool = False,
     group_by_text_eval: bool = False,
     morph_type_eval: bool = True,
-    file_mistakes: Optional[str] = None
+    file_mistakes: Optional[str] = None,
+    train_morph_texts: Optional[Set[str]] = None,
 ) -> Dict[str, float]:
     """
     Performs various evaluations of predicted vs. target etymologies in a single pass:
@@ -581,6 +604,10 @@ def evaluate(
          - inflectional affixes
        - Also returns counts for each morph type.
 
+    6) Seen-vs-Unseen Split (enabled by train_morph_texts being provided):
+       - Computes separate average per-morph F1 for morph texts that did / do not
+         appear anywhere in the training annotations.
+
     The function returns a dictionary containing whichever metrics were requested. 
 
     Parameters:
@@ -604,6 +631,9 @@ def evaluate(
     file_mistakes : str, optional
         If specified and instance_eval=True, logs each morph with F1 != 1.0 
         to this file.
+    train_morph_texts : set[str], optional
+        If specified, computes separate F1 scores and counts for morph texts that
+        appeared in the training data vs. those that did not.
 
     Returns:
     --------
@@ -624,6 +654,10 @@ def evaluate(
                 "count_root": ...,
                 "count_derivational_affix": ...,
                 "count_inflectional_affix": ...,
+                "f1_on_seen_in_train": ...,
+                "f1_on_unseen_in_train": ...,
+                "count_seen_in_train": ...,
+                "count_unseen_in_train": ...,
             }
     """
     # For mistakes logging 
@@ -670,6 +704,12 @@ def evaluate(
         deriv_count = 0
         f1_infl_sum = 0.0
         infl_count = 0
+
+    if train_morph_texts is not None:
+        f1_seen_sum = 0.0
+        seen_count = 0
+        f1_unseen_sum = 0.0
+        unseen_count = 0
 
     for sent_pred, sent_tgt in zip(sentences_prediction, sentences_target):
         # Basic check for sentence-level mismatch
@@ -740,6 +780,14 @@ def evaluate(
                         f1_infl_sum += f1
                         infl_count += 1
 
+                if train_morph_texts is not None:
+                    if morph_tgt.text in train_morph_texts:
+                        f1_seen_sum += f1
+                        seen_count += 1
+                    else:
+                        f1_unseen_sum += f1
+                        unseen_count += 1
+
     # Close mistakes file if open
     if mistakes_f:
         mistakes_f.close()
@@ -799,5 +847,11 @@ def evaluate(
         results["f1_on_inflectional_affix"] = (
             100.0 * f1_infl_sum / infl_count if infl_count > 0 else 100.0
         )
+
+    if train_morph_texts is not None:
+        results["count_seen_in_train"] = seen_count
+        results["count_unseen_in_train"] = unseen_count
+        results["f1_on_seen_in_train"] = 100.0 * f1_seen_sum / seen_count if seen_count > 0 else 100.0
+        results["f1_on_unseen_in_train"] = 100.0 * f1_unseen_sum / unseen_count if unseen_count > 0 else 100.0
 
     return results
