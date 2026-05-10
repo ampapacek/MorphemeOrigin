@@ -70,6 +70,8 @@ output/
 out/
 *.log
 SVOC2026/
+notes.md
+article_revision_proposals_from_notes.md
 
 # Generated notebook artifacts
 predictions/
