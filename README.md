@@ -125,7 +125,7 @@ This example enables all models, extends training data using dictionary-derived 
 
 ## Command-Line Arguments
 
-The primary machine learning model is implemented in [`src/morph_classifier.py`](./src/morph_classifier.py) and configured through [`src/main.py`](./src/main.py).
+The main default learning model is the MLP-based [`src/morph_classifier.py`](./src/morph_classifier.py), configured through [`src/main.py`](./src/main.py). The repository also includes alternative classifier types, including SVM, logistic regression, and the PyTorch GRU model in [`src/torch_gru_classifier.py`](./src/torch_gru_classifier.py).
 
 - **Classifier type**
   - `--classifier_type svm` with `--svm_c` and `--svm_kernel`
@@ -260,7 +260,8 @@ Notes:
 - Arguments before `--` configure `run_llm_sweep.py`
 - Arguments after `--` are forwarded to each `llm_predict.py` run
 - Logs for sweep runs are stored in `outputs/llm_sweep_logs/`
-- Evaluation rows from each run are appended to the shared summary file
+- Evaluation rows from each run are appended to the shared summary file, but this summary contains only the compact metrics written by `llm_predict.py` (`f1score_instance`, `accuracy_instance`, `f1score_micro`, native vs. borrowed scores, and grouped F1)
+- If you want morph-type split scores such as root and derivational-affix F1, run [`src/evaluate_predictions.py`](./src/evaluate_predictions.py) on the saved prediction files after the sweep
 
 ### Evaluate an existing prediction file
 
@@ -284,13 +285,19 @@ The project includes four baseline models implemented in [`src/baselines.py`](./
 
 ## Evaluation
 
-The main evaluation computes an F1 score between predicted and target etymology sets for each morph and then averages across morphs.
+The main evaluation computes an F1 score between the predicted and gold etymology sets for each morph and then averages these scores across all morphs.
 
 Additional reported views include:
 
-- separate scores for categories such as native vs. borrowed
-- relative error reduction against the dummy baseline
-- grouped F1 by morph text
+- `accuracy_instance`, which requires an exact match of the predicted etymology set for a morph
+- `f1score_micro`, computed over all predicted and gold labels together
+- separate scores for native and borrowed morphs
+- grouped F1 by morph text, where identical morph strings are aggregated before averaging
+- morph-type split scores for roots, derivational affixes, and inflectional affixes
+- train-seen vs. train-unseen split scores when a training annotation file is provided to [`src/evaluate_predictions.py`](./src/evaluate_predictions.py)
+- relative error reduction against the dummy baseline in the `main.py` experiment pipeline
+
+The automatic evaluation inside [`src/llm_predict.py`](./src/llm_predict.py) prints and appends only the compact subset of metrics. For the fuller report, especially morph-type split scores, evaluate the saved prediction file explicitly with [`src/evaluate_predictions.py`](./src/evaluate_predictions.py).
 
 ## Project Context
 
